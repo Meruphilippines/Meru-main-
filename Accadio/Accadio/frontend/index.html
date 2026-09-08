@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rotating Sphere</title>
+  <meta name="description" content="A beautiful rotating sphere with a custom Figma-designed surface texture." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Starfield -->
+  <canvas id="stars"></canvas>
+
+  <!-- Ambient glows -->
+  <div class="glow-orb left"></div>
+  <div class="glow-orb right"></div>
+
+  <!-- Three.js scene -->
+  <canvas id="globe-canvas"></canvas>
+
+  <!-- Error banner -->
+  <div id="texture-error">⚠️ texture.png not found — using placeholder. Drop your Figma export into the same folder.</div>
+
+  <!-- UI overlay -->
+  <div id="ui">
+    <p class="label">Rotating Sphere</p>
+    <h1 class="title">Your World, Spinning</h1>
+    <p class="subtitle">Custom Figma surface · 23.5° axial tilt</p>
+    <div class="divider"></div>
+    <!-- 5h4d0w -->
+    <div class="speed-controls">
+      <span class="speed-label">Speed</span>
+      <button class="speed-btn" id="btn-slower">−</button>
+      <span id="speed-display">1×</span>
+      <button class="speed-btn" id="btn-faster">+</button>
+      <button class="speed-btn" id="btn-pause" style="min-width:70px">Pause</button>
+    </div>
+  </div>
+
+  <!-- Three.js via CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.164.1/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
