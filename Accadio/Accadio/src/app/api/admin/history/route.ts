@@ -1,0 +1,63 @@
+import { getSessionFromCookie } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { headers } from "next/headers";
+
+export async function GET() {
+  try {
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie");
+    const session = await getSessionFromCookie(cookieHeader);
+
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const slots = await prisma.historySlot.findMany({
+      orderBy: [{ order: "asc" }, { year: "desc" }],
+    });
+
+    return Response.json(slots);
+  } catch (error) {
+    console.error("Admin History GET error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie");
+    const session = await getSessionFromCookie(cookieHeader);
+
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { title, year, tag, caption, photoPath, videoUrl, gradient, order } = body;
+
+    if (!title || !year) {
+      return Response.json({ error: "Title and year are required" }, { status: 400 });
+    }
+
+    const count = await prisma.historySlot.count();
+
+    const newSlot = await prisma.historySlot.create({
+      data: {
+        title: title.trim(),
+        year: year.trim(),
+        tag: tag?.trim() || "Event",
+        caption: caption?.trim() || null,
+        photoPath: photoPath?.trim() || null,
+        videoUrl: videoUrl?.trim() || null,
+        gradient: gradient?.trim() || "from-blue-400 to-indigo-500",
+        order: typeof order === "number" ? order : count,
+      },
+    });
+
+    return Response.json(newSlot, { status: 201 });
+  } catch (error) {
+    console.error("Admin History POST error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

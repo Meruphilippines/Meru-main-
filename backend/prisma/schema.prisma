@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id                 String    @id @default(uuid())
+  username           String    @unique
+  passwordHash       String
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  sessions           Session[]
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  token        String    @unique
+  adminId      String
+  admin        AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  lastActivity DateTime  @default(now())
+  expiresAt    DateTime
+}
+
+model Program {
+  id                String   @id @default(uuid())
+  title             String
+  slug              String?
+  category          String   // "exchange", "corporate", "youth", "academic"
+  tag               String   // "Academic Exchange", etc.
+  desc              String
+  eligibility       String?
+  benefits          String?  // JSON string array e.g. '["8 ECTS Credits"]'
+  gradient          String   @default("from-blue-400 to-indigo-500")
+  iconName          String   @default("Compass")
+  date              String?
+  featuredImagePath String?
+  videoUrl          String?
+  isPublished       Boolean  @default(true)
+  order             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Testimonial {
+  id          String   @id @default(uuid())
+  type        String   @default("written") // "video" | "written"
+  title       String?
+  speaker     String?
+  details     String?
+  duration    String?
+  quote       String?
+  author      String?
+  role        String?
+  rating      Int      @default(5)
+  programTag  String?
+  region      String?
+  gradient    String   @default("from-blue-400 to-indigo-500")
+  videoUrl    String?
+  thumbnail   String?
+  photoPath   String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model ContactInfo {
+  id              String   @id @default(uuid())
+  phone           String   @default("+1 (555) 123-4567")
+  email           String   @default("connect@meruglobal.org")
+  address         String   @default("MERU Global Team, International Office")
+  socialLinks     String?  // JSON string
+  googleMapsEmbed String?
+  offices         String?  // JSON string array of office objects
+  lastUpdated     DateTime @default(now())
+}
+
+model Inquiry {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  department String   @default("general")
+  message    String
+  status     String   @default("new") // "new" | "read" | "replied" | "archived"
+  createdAt  DateTime @default(now())
+}
+
+model MediaItem {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String
+  title        String?
+  caption      String?
+  type         String   // "image" | "video"
+  size         Int
+  url          String
+  publicId     String?
+  provider     String   @default("local") // "local" | "cloudinary" | "s3"
+  placement    String   @default("general") // "history", "programs", "homepage", "testimonials", "general"
+  tag          String?  // "Event", "Academic", "Expansion", "Summit", "Field"
+  year         String?  // e.g. "2024", "2025"
+  speaker      String?  // for video reviews
+  duration     String?  // for video reviews e.g. "3:45"
+  order        Int      @default(0)
+  uploadedAt   DateTime @default(now())
+}
+
+model ProgramRegistration {
+  id          String   @id @default(uuid())
+  programId   String?
+  programName String
+  name        String
+  email       String
+  phone       String?
+  education   String?
+  statement   String?
+  status      String   @default("pending") // "pending" | "contacted" | "approved" | "rejected"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HomepageSetting {
+  id           String   @id @default("default")
+  heroTitle    String   @default("Reaching the Unreached")
+  heroSubtitle String   @default("Connecting generations to the Great Commission")
+  tickerItems  String?  // JSON string
+  lastUpdated  DateTime @default(now())
+}
+
+model PageContent {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  content     String   @default("")
+  sections    String?  // JSON string of structured page components/slots
+  status      String   @default("published")
+  lastUpdated DateTime @default(now())
+}
+
+model HistorySlot {
+  id        String   @id @default(uuid())
+  title     String
+  year      String
+  tag       String   @default("Event") // "Event", "Academic", "Expansion", "Corporate", "Summit", "Field"
+  caption   String?
+  photoPath String?
+  videoUrl  String?
+  gradient  String   @default("from-blue-400 to-indigo-500")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  bio       String?
+  initial   String?
+  photoPath String?
+  gradient  String   @default("from-blue-600 to-indigo-700")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsArticle {
+  id          String   @id @default(uuid())
+  title       String
+  category    String   // "Expansion", "Admissions", "Partnerships", etc.
+  date        String   // "May 28, 2026"
+  desc        String
+  content     String?
+  gradient    String   @default("from-blue-400 to-indigo-500")
+  imagePath   String?
+  isPublished Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

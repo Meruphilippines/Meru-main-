@@ -1,0 +1,38 @@
+{
+  "heroTitle": "Reaching the Unreached",
+  "heroSubtitle": "Connecting generations to the Great Commission",
+  "heroImagePath": "",
+  "heroVideoUrl": "",
+  "logoRotation": true,
+  "tickerItems": [
+    {
+      "id": "b81a0387-3241-45c0-ae45-2c4695a22603",
+      "label": "EVENT",
+      "date": "JUNE 2026",
+      "text": "Global Youth Leadership Summit 2026 registration is now officially open.",
+      "color": "blue"
+    },
+    {
+      "id": "1b84bec5-f6f7-4356-9f2e-323f7686d977",
+      "label": "EXPANSION",
+      "date": "MAY 2026",
+      "text": "Meru expands footprint to South America with new regional offices in Bogota.",
+      "color": "emerald"
+    },
+    {
+      "id": "e633feb2-aba2-40cc-bf93-7b721f2df879",
+      "label": "MILESTONE",
+      "date": "APRIL 2026",
+      "text": "Corporate Excellence Program achieves milestone of training 50,000+ professionals.",
+      "color": "purple"
+    },
+    {
+      "id": "8bfab81a-d683-4df0-9d1c-31c599eb2d8b",
+      "label": "PARTNERS",
+      "date": "MARCH 2026",
+      "text": "Partnered with 12 new European academic organizations for global exchanges.",
+      "color": "amber"
+    }
+  ],
+  "lastUpdated": "2026-08-16T13:21:26.294Z"
+}

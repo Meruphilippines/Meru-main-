@@ -1,0 +1,15 @@
+# Dependencies and build output
+**/node_modules/
+**/dist/
+**/.next/
+
+# Environment files and local databases
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-journal
+
+# Archives and logs
+*.zip
+**/*.log

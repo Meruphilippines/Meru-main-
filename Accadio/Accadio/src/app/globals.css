@@ -1,0 +1,304 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  /* Primary Hues (Indigo / Royal Blue) */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
+  --color-primary-900: #1e3a8a;
+
+  /* Accent Hues (Magenta / Purple) */
+  --color-accent-50: #fdf4ff;
+  --color-accent-100: #fae8ff;
+  --color-accent-200: #f5d0fe;
+  --color-accent-500: #d946ef;
+  --color-accent-600: #c084fc;
+  --color-accent-700: #a21caf;
+  --color-accent-900: #701a75;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-plus-jakarta);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html:lang(si),
+html:lang(ta),
+html:lang(hi) {
+  font-family: var(--font-noto), var(--font-inter), sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+}
+
+/* Meru official logo animations */
+@keyframes meru-logo-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes meru-logo-subtle {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes meru-logo-hero {
+  0% {
+    transform: perspective(900px) rotateY(0deg) rotateX(4deg);
+  }
+
+  50% {
+    transform: perspective(900px) rotateY(6deg) rotateX(4deg);
+  }
+
+  100% {
+    transform: perspective(900px) rotateY(0deg) rotateX(4deg);
+  }
+}
+
+/* MERU hero globe — 360° spin */
+@keyframes spin-globe {
+  0% {
+    transform: rotateY(0deg) rotateX(10deg);
+  }
+
+  100% {
+    transform: rotateY(360deg) rotateX(10deg);
+  }
+}
+
+.animate-spin-globe {
+  animation: spin-globe 10s linear infinite;
+  transform-origin: center center;
+  transform-style: preserve-3d;
+}
+
+.meru-globe-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 900px;
+  transform-style: preserve-3d;
+}
+
+.meru-logo-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.meru-logo-stage-hero {
+  filter: drop-shadow(0 18px 28px rgba(30, 64, 175, 0.14));
+}
+
+
+.animate-meru-logo-float {
+  animation: meru-logo-float 4.5s ease-in-out infinite;
+}
+
+.animate-meru-logo-subtle {
+  animation: meru-logo-subtle 5s ease-in-out infinite;
+}
+
+.animate-meru-logo-hero {
+  animation: meru-logo-hero 7s ease-in-out infinite;
+}
+
+/* Custom marquee animation for the news ticker */
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee-paused:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* Utility to hide scrollbars but keep functional scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+}
+
+/* ── Glow Orb Animations from 123 Animation ── */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-orb.left {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(60, 100, 255, 0.22), transparent 70%);
+  top: 20%;
+  left: -10%;
+  animation: driftLeft 12s ease-in-out infinite alternate;
+}
+
+.glow-orb.right {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(120, 60, 255, 0.18), transparent 70%);
+  bottom: 10%;
+  right: -8%;
+  animation: driftRight 15s ease-in-out infinite alternate;
+}
+
+@keyframes driftLeft {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(40px, -60px);
+  }
+}
+
+@keyframes driftRight {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-40px, 60px);
+  }
+}
+
+/* ── Admin Panel: TipTap Editor Styles ── */
+.ProseMirror {
+  min-height: 300px;
+  padding: 1rem;
+  outline: none;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
+.ProseMirror h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #334155;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e2e8f0;
+  padding-left: 1rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}

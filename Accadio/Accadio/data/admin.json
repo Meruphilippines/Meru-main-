@@ -1,0 +1,9 @@
+[
+  {
+    "id": "64f6d078-2963-431f-bb08-0dfc34d5b5a7",
+    "username": "admin",
+    "passwordHash": "$2b$12$5Z4OMszAfJpXTwE0VXbJyO5gJRWp11GeXdNGGqqz6L3tRS/DRPCuC",
+    "mustChangePassword": false,
+    "createdAt": "2026-08-16T13:21:26.289Z"
+  }
+]
