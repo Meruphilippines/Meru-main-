@@ -27,16 +27,16 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Meru Global Team | Reaching The Unreached",
-  description: "Connecting Global Opportunities Through Excellence. Discover our international youth leadership, professional capability building, and global academic exchange programs.",
-  keywords: ["Meru Global", "Global Exchange", "Youth Leadership", "Corporate Training", "Professional Excellence", "Reaching the Unreached"],
+  title: "Meru Global Team",
+  description: "The MERU Global Team is committed to carrying Christ's name into places where He is yet unknown. Our focus is on building strong foundations in the Word of God, equipping believers to live out their faith and share the Gospel across nations. By connecting people worldwide to the Great Commission, MERU empowers Christians of every generation in their faith and to become witnesses of Christ's love in communities that remain unreached.",
+  keywords: ["Meru Global Team", "Meru Global", "Great Commission", "Gospel", "Christ", "Reaching the Unreached", "Evangelism", "Discipleship", "Faith"],
   authors: [{ name: "Meru Global Team" }],
   robots: "index, follow",
   openGraph: {
-    title: "Meru Global Team | Reaching The Unreached",
-    description: "Connecting Global Opportunities Through Excellence. Join our certified international tracks.",
-    url: "https://meruglobal.org",
-    siteName: "Meru Global",
+    title: "Meru Global Team",
+    description: "The MERU Global Team is committed to carrying Christ's name into places where He is yet unknown. Our focus is on building strong foundations in the Word of God, equipping believers to live out their faith and share the Gospel across nations. By connecting people worldwide to the Great Commission, MERU empowers Christians of every generation in their faith and to become witnesses of Christ's love in communities that remain unreached.",
+    url: "https://meruglobalteam.org",
+    siteName: "Meru Global Team",
     type: "website",
   },
 };

@@ -1,71 +1,36 @@
-# Meru Web Platform
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A modern full-stack application for the Meru platform, cleanly organized into dedicated **frontend** and **backend** services.
+## Getting Started
 
-## Project Structure
+First, run the development server:
 
-```text
-meru/
-├── frontend/                 # Next.js 16 Client Web Application
-│   ├── src/
-│   │   ├── app/              # Next.js App Router (Public & Admin UI)
-│   │   └── components/       # UI Components (3D Globe, Navigation, Admin)
-│   ├── public/               # Public assets (Logos, SVGs)
-│   ├── next.config.ts        # Reverse proxy rewrites for /api and /uploads
-│   ├── package.json
-│   └── .env.example
-│
-├── backend/                  # Standalone Express + TypeScript API Server
-│   ├── src/
-│   │   ├── routes/           # REST API routes (Auth, Programs, Media, etc.)
-│   │   ├── middleware/       # Session auth & file upload middleware
-│   │   ├── lib/              # Auth, Email, Storage, DB handlers
-│   │   └── server.ts         # Express server entry point (Port 5000)
-│   ├── prisma/               # Prisma ORM schema, migrations, seed
-│   ├── data/                 # JSON data store
-│   ├── public/uploads/       # Uploaded files & media
-│   ├── package.json
-│   └── .env.example
-│
-├── package.json              # Root workspace manager
-└── README.md
-```
-
-## Quick Start
-
-### 1. Install Dependencies
-Run from the root directory to install all dependencies across workspace, backend, and frontend:
-```bash
-npm run install:all
-```
-
-### 2. Set Up Environment Variables
-- **Backend:** Copy `backend/.env.example` to `backend/.env`
-- **Frontend:** Copy `frontend/.env.example` to `frontend/.env.local`
-
-### 3. Generate Database Client & Seed
-```bash
-npm run prisma:generate
-npm run prisma:seed
-```
-
-### 4. Start Development Servers
-To run both the backend (port 5000) and frontend (port 3000) simultaneously:
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Or run them individually in separate terminals:
-```bash
-# Terminal 1: Backend
-npm run dev:backend
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-# Terminal 2: Frontend
-npm run dev:frontend
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## URLs
-- **Frontend:** [http://localhost:3000](http://localhost:3000)
-- **Backend API:** [http://localhost:5000/api](http://localhost:5000/api)
-- **Backend Healthcheck:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
-- **Admin Portal:** [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
