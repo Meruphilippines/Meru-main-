@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: __dirname,
-  },
+  // For Render deployment - output standalone
+  output: "standalone",
+  // Disable turbopack in production builds
+  experimental: {},
 };
 
 export default nextConfig;

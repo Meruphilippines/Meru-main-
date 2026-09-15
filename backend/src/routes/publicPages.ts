@@ -1,23 +1,18 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { readData } from "../lib/db";
 import { DEFAULT_PAGE_CONTENTS } from "../lib/defaultPageContents";
 
 const router = Router();
-
-interface PageData {
-  id: string;
-  slug: string;
-  title: string;
-  content: string;
-  status: "draft" | "published";
-  lastUpdated: string;
-}
 
 // GET /api/pages/:slug
 router.get("/:slug", async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = req.params.slug as string;
+
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+    });
 
     const dbPage = await prisma.pageContent.findUnique({
       where: { slug },
@@ -32,14 +27,6 @@ router.get("/:slug", async (req: Request, res: Response): Promise<void> => {
         status: dbPage.status,
         lastUpdated: dbPage.lastUpdated.toISOString(),
       });
-      return;
-    }
-
-    const pages = readData<PageData[]>("pages.json", []);
-    const jsonPage = pages.find((p) => p.slug === slug);
-
-    if (jsonPage && jsonPage.status === "published" && jsonPage.content) {
-      res.json(jsonPage);
       return;
     }
 
@@ -58,7 +45,7 @@ router.get("/:slug", async (req: Request, res: Response): Promise<void> => {
     res.status(404).json({ error: "Page not found" });
   } catch (error) {
     console.error("Public page GET error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to load page content" });
   }
 });
 

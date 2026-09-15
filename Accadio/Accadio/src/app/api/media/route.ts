@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -38,9 +41,23 @@ export async function GET(request: NextRequest) {
       uploadedAt: m.uploadedAt.toISOString(),
     }));
 
-    return NextResponse.json(formatted);
+    return NextResponse.json(formatted, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+      },
+    });
   } catch (error) {
     console.error("Public media GET error:", error);
-    return NextResponse.json({ error: "Failed to load media" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load media" },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   }
 }

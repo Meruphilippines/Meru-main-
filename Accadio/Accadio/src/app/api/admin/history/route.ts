@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
@@ -54,6 +55,13 @@ export async function POST(request: Request) {
         order: typeof order === "number" ? order : count,
       },
     });
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/history");
+    } catch (e) {
+      // ignore
+    }
 
     return Response.json(newSlot, { status: 201 });
   } catch (error) {

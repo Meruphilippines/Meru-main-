@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -42,6 +43,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
       },
     });
 
+    try {
+      revalidatePath("/history");
+      revalidatePath("/", "layout");
+    } catch {
+      // ignore
+    }
+
     return Response.json(updated);
   } catch (error) {
     console.error("Admin History PUT error:", error);
@@ -65,9 +73,17 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       where: { id },
     });
 
+    try {
+      revalidatePath("/history");
+      revalidatePath("/", "layout");
+    } catch {
+      // ignore
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     console.error("Admin History DELETE error:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

@@ -17,6 +17,7 @@ import { useToast } from "@/components/admin/Toast";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
 import { DEFAULT_PAGE_CONTENTS } from "@/lib/defaultPageContents";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface PageData {
   id: string;
@@ -74,6 +75,7 @@ export default function AdminPageEditorPage({
           "success",
           status === "published" ? "Page published live!" : "Draft saved successfully!"
         );
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to save page");
       }

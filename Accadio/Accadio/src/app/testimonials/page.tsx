@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Search, Play, X, Volume2, Pause, SkipForward, ArrowRight, Loader2 } from "lucide-react";
 
@@ -37,24 +38,23 @@ export default function TestimonialsPage() {
 
   const [videoTestimonials, setVideoTestimonials] = useState<VideoItem[]>([]);
   const [writtenTestimonials, setWrittenTestimonials] = useState<WrittenItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic testimonials from database API
+  const [customContent, setCustomContent] = useState<string | null>(null);
+
+  // Live-polling – re-fetches every 5 s, on tab focus, and on admin broadcast
+  const { data: livePageContent, loading: loadingContent } = useLiveData<{ content?: string }>("/api/pages/testimonials", 5000);
+  const { data: liveTestimonials, loading: loadingData } = useLiveData<{ videos: VideoItem[]; written: WrittenItem[] }>("/api/testimonials", 5000);
+
+  const loading = loadingContent || loadingData;
+
   useEffect(() => {
-    fetch("/api/testimonials")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.videos && data.written) {
-          setVideoTestimonials(data.videos);
-          setWrittenTestimonials(data.written);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load testimonials:", err);
-        setLoading(false);
-      });
-  }, []);
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
+
+  useEffect(() => {
+    if (liveTestimonials?.videos) setVideoTestimonials(liveTestimonials.videos);
+    if (liveTestimonials?.written) setWrittenTestimonials(liveTestimonials.written);
+  }, [liveTestimonials]);
 
   const handleOpenVideo = (video: VideoItem) => {
     setActiveVideo(video);
@@ -65,10 +65,11 @@ export default function TestimonialsPage() {
 
   // Filter written reviews
   const filteredReviews = writtenTestimonials.filter((rev) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      rev.quote.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rev.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rev.role.toLowerCase().includes(searchQuery.toLowerCase());
+      (rev.quote || "").toLowerCase().includes(q) ||
+      (rev.author || "").toLowerCase().includes(q) ||
+      (rev.role || "").toLowerCase().includes(q);
     const matchesRating = ratingFilter === "all" || rev.rating === ratingFilter;
     return matchesSearch && matchesRating;
   });
@@ -87,6 +88,16 @@ export default function TestimonialsPage() {
           Read reviews and watch feedback clips from academic partners, corporate leaders, and summit delegates.
         </p>
       </div>
+
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && customContent.trim() !== "<p></p>" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       {loading ? (
         <div className="max-w-7xl mx-auto px-4 text-center py-20">

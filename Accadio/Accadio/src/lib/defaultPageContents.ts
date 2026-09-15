@@ -103,4 +103,8 @@ export const DEFAULT_PAGE_CONTENTS: Record<string, string> = {
 <h2>Direct Contact Channels</h2>
 <p>Email: <strong>connect@meruglobal.org</strong> | Telephone: <strong>+1 (555) 123-4567</strong></p>
 <p>Hours of Operation: <strong>Monday – Friday: 9:00 AM – 6:00 PM (GMT)</strong></p>`,
+
+  news: `<h1>News & Global Announcements</h1>
+<p><strong>Latest Press Releases, Office Expansions, and Events</strong></p>
+<p>Stay informed about MERU Global Team initiatives, civic fellowship selections, regional hub launches, and upcoming orientation webinars worldwide.</p>`,
 };

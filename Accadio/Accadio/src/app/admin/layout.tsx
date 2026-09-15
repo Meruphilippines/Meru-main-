@@ -101,10 +101,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Force password change
-  if (mustChangePassword && pathname !== "/admin/settings") {
-    router.replace("/admin/settings");
-  }
+  // Force password change in useEffect safely
+  useEffect(() => {
+    if (authenticated && mustChangePassword && pathname !== "/admin/settings") {
+      router.replace("/admin/settings");
+    }
+  }, [authenticated, mustChangePassword, pathname, router]);
 
   return (
     <ToastProvider>

@@ -1,109 +1,49 @@
 import { Router, Response } from "express";
-import { v4 as uuidv4 } from "uuid";
-import { readData, writeData } from "../lib/db";
 import prisma from "../lib/prisma";
 import { DEFAULT_PAGE_CONTENTS } from "../lib/defaultPageContents";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
-interface PageData {
-  id: string;
-  slug: string;
-  title: string;
-  content: string;
-  status: "draft" | "published";
-  lastUpdated: string;
-}
+const SLUGS = ["home", "about", "history", "programs", "testimonials", "contact", "news"];
 
 // GET /api/admin/pages
 router.get("/", requireAuth, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    let pages = readData<PageData[]>("pages.json", []);
-    let modified = false;
-
-    if (!pages || pages.length === 0) {
-      const defaultPages: PageData[] = [
-        { id: uuidv4(), slug: "home", title: "Home", content: DEFAULT_PAGE_CONTENTS.home, status: "published", lastUpdated: new Date().toISOString() },
-        { id: uuidv4(), slug: "about", title: "About Us", content: DEFAULT_PAGE_CONTENTS.about, status: "published", lastUpdated: new Date().toISOString() },
-        { id: uuidv4(), slug: "history", title: "History", content: DEFAULT_PAGE_CONTENTS.history, status: "published", lastUpdated: new Date().toISOString() },
-        { id: uuidv4(), slug: "programs", title: "Programs", content: DEFAULT_PAGE_CONTENTS.programs, status: "published", lastUpdated: new Date().toISOString() },
-        { id: uuidv4(), slug: "testimonials", title: "Testimonials", content: DEFAULT_PAGE_CONTENTS.testimonials, status: "published", lastUpdated: new Date().toISOString() },
-        { id: uuidv4(), slug: "contact", title: "Contact", content: DEFAULT_PAGE_CONTENTS.contact, status: "published", lastUpdated: new Date().toISOString() },
-      ];
-      writeData("pages.json", defaultPages);
-      res.json(defaultPages);
-      return;
-    }
-
-    pages = pages.map((page) => {
-      if (!page.content || page.content.trim() === "") {
-        const defaultContent = DEFAULT_PAGE_CONTENTS[page.slug];
-        if (defaultContent) {
-          modified = true;
-          return { ...page, content: defaultContent };
-        }
-      }
-      return page;
+    const dbPages = await prisma.pageContent.findMany({
+      orderBy: { slug: "asc" },
     });
 
-    if (modified) {
-      writeData("pages.json", pages);
+    // Ensure all standard slugs exist in DB
+    const existingSlugs = new Set(dbPages.map((p) => p.slug));
+    for (const slug of SLUGS) {
+      if (!existingSlugs.has(slug)) {
+        const defaultContent = DEFAULT_PAGE_CONTENTS[slug] || "";
+        const title = slug.charAt(0).toUpperCase() + slug.slice(1);
+        const created = await prisma.pageContent.create({
+          data: {
+            slug,
+            title,
+            content: defaultContent,
+            status: "published",
+          },
+        });
+        dbPages.push(created);
+      }
     }
 
-    res.json(pages);
+    const formatted = dbPages.map((page) => ({
+      id: page.id,
+      slug: page.slug,
+      title: page.title,
+      content: page.content || DEFAULT_PAGE_CONTENTS[page.slug] || "",
+      status: page.status,
+      lastUpdated: page.lastUpdated.toISOString(),
+    }));
+
+    res.json(formatted);
   } catch (error) {
-    console.error("Pages GET error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// POST /api/admin/pages
-router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { title, slug, content, status } = req.body;
-
-    if (!title || !slug) {
-      res.status(400).json({ error: "Title and slug are required" });
-      return;
-    }
-
-    const pages = readData<PageData[]>("pages.json", []);
-    const newPage: PageData = {
-      id: uuidv4(),
-      slug,
-      title,
-      content: content || DEFAULT_PAGE_CONTENTS[slug] || "",
-      status: status || "draft",
-      lastUpdated: new Date().toISOString(),
-    };
-
-    pages.push(newPage);
-    writeData("pages.json", pages);
-
-    try {
-      await prisma.pageContent.upsert({
-        where: { slug },
-        update: {
-          title,
-          content: newPage.content,
-          status: newPage.status,
-          lastUpdated: new Date(),
-        },
-        create: {
-          slug,
-          title,
-          content: newPage.content,
-          status: newPage.status,
-        },
-      });
-    } catch (dbErr) {
-      console.error("Prisma page sync error on create:", dbErr);
-    }
-
-    res.status(201).json(newPage);
-  } catch (error) {
-    console.error("Pages POST error:", error);
+    console.error("Admin Pages GET error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -112,22 +52,22 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): 
 router.get("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const pages = readData<PageData[]>("pages.json", []);
-    let page = pages.find((p) => p.id === id || p.slug === id);
+    let page = await prisma.pageContent.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
 
     if (!page) {
-      const dbPage = await prisma.pageContent.findFirst({
-        where: { OR: [{ id }, { slug: id }] },
-      });
-      if (dbPage) {
-        page = {
-          id: dbPage.id,
-          slug: dbPage.slug,
-          title: dbPage.title,
-          content: dbPage.content || DEFAULT_PAGE_CONTENTS[dbPage.slug] || "",
-          status: dbPage.status as "draft" | "published",
-          lastUpdated: dbPage.lastUpdated.toISOString(),
-        };
+      // Check if it's one of standard slugs
+      if (SLUGS.includes(id)) {
+        const defaultContent = DEFAULT_PAGE_CONTENTS[id] || "";
+        page = await prisma.pageContent.create({
+          data: {
+            slug: id,
+            title: id.charAt(0).toUpperCase() + id.slice(1),
+            content: defaultContent,
+            status: "published",
+          },
+        });
       }
     }
 
@@ -136,16 +76,14 @@ router.get("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
-    if (!page.content || page.content.trim() === "") {
-      page.content = DEFAULT_PAGE_CONTENTS[page.slug] || "";
-      const index = pages.findIndex((p) => p.id === page!.id);
-      if (index !== -1) {
-        pages[index] = { ...pages[index], content: page.content };
-        writeData("pages.json", pages);
-      }
-    }
-
-    res.json(page);
+    res.json({
+      id: page.id,
+      slug: page.slug,
+      title: page.title,
+      content: page.content || DEFAULT_PAGE_CONTENTS[page.slug] || "",
+      status: page.status,
+      lastUpdated: page.lastUpdated.toISOString(),
+    });
   } catch (error) {
     console.error("Page GET error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -157,92 +95,43 @@ router.put("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
   try {
     const id = req.params.id as string;
     const body = req.body;
-    const pages = readData<PageData[]>("pages.json", []);
-    const index = pages.findIndex((p) => p.id === id || p.slug === id);
 
-    let updatedPage: PageData;
+    const existing = await prisma.pageContent.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
 
-    if (index === -1) {
-      const dbPage = await prisma.pageContent.findFirst({
-        where: { OR: [{ id }, { slug: id }] },
-      });
-      if (!dbPage) {
-        res.status(404).json({ error: "Page not found" });
-        return;
-      }
-      updatedPage = {
-        id: dbPage.id,
-        slug: body.slug || dbPage.slug,
-        title: body.title !== undefined ? body.title : dbPage.title,
-        content: body.content !== undefined ? body.content : dbPage.content,
-        status: body.status || (dbPage.status as "draft" | "published"),
-        lastUpdated: new Date().toISOString(),
-      };
-      pages.push(updatedPage);
-    } else {
-      pages[index] = {
-        ...pages[index],
-        ...body,
-        id: pages[index].id,
-        lastUpdated: new Date().toISOString(),
-      };
-      updatedPage = pages[index];
-    }
+    const slug = body.slug || existing?.slug || id;
+    const title = body.title !== undefined ? body.title : (existing?.title || slug.charAt(0).toUpperCase() + slug.slice(1));
+    const content = body.content !== undefined ? body.content : (existing?.content || "");
+    const status = body.status || existing?.status || "published";
 
-    writeData("pages.json", pages);
+    const updated = await prisma.pageContent.upsert({
+      where: { slug },
+      update: {
+        title,
+        content,
+        status,
+        lastUpdated: new Date(),
+      },
+      create: {
+        slug,
+        title,
+        content,
+        status,
+        lastUpdated: new Date(),
+      },
+    });
 
-    try {
-      await prisma.pageContent.upsert({
-        where: { slug: updatedPage.slug },
-        update: {
-          title: updatedPage.title,
-          content: updatedPage.content,
-          status: updatedPage.status,
-          lastUpdated: new Date(),
-        },
-        create: {
-          slug: updatedPage.slug,
-          title: updatedPage.title,
-          content: updatedPage.content,
-          status: updatedPage.status,
-        },
-      });
-    } catch (dbErr) {
-      console.error("Prisma page sync error on PUT:", dbErr);
-    }
-
-    res.json(updatedPage);
+    res.json({
+      id: updated.id,
+      slug: updated.slug,
+      title: updated.title,
+      content: updated.content,
+      status: updated.status,
+      lastUpdated: updated.lastUpdated.toISOString(),
+    });
   } catch (error) {
     console.error("Page PUT error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// DELETE /api/admin/pages/:id
-router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const id = req.params.id as string;
-    const pages = readData<PageData[]>("pages.json", []);
-    const filtered = pages.filter((p) => p.id !== id && p.slug !== id);
-
-    if (filtered.length === pages.length) {
-      res.status(404).json({ error: "Page not found" });
-      return;
-    }
-
-    writeData("pages.json", filtered);
-
-    try {
-      await prisma.pageContent.deleteMany({
-        where: { OR: [{ id }, { slug: id }] },
-      });
-    } catch (dbErr) {
-      console.error("Prisma page delete error:", dbErr);
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Page DELETE error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

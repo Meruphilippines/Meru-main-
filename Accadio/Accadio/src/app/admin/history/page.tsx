@@ -19,6 +19,7 @@ import { useToast } from "@/components/admin/Toast";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
 import SlotMediaUpload from "@/components/admin/SlotMediaUpload";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface HistorySlotItem {
   id: string;
@@ -131,6 +132,7 @@ export default function AdminHistoryPage() {
           showToast("success", "History slot updated successfully!");
           fetchSlots();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to update slot");
         }
@@ -144,6 +146,7 @@ export default function AdminHistoryPage() {
           showToast("success", "History slot added successfully!");
           fetchSlots();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to add slot");
         }
@@ -165,6 +168,7 @@ export default function AdminHistoryPage() {
       if (res.ok) {
         showToast("success", "History slot deleted");
         setSlots((prev) => prev.filter((s) => s.id !== deleteId));
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to delete slot");
       }

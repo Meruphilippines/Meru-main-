@@ -16,6 +16,7 @@ import { useToast } from "@/components/admin/Toast";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import MediaUpload from "@/components/admin/MediaUpload";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface MediaItem {
   id: string;
@@ -78,6 +79,7 @@ export default function AdminPhotosPage() {
     if (res.ok) {
       showToast("success", `${files.length} photo(s) uploaded successfully!`);
       fetchPhotos();
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to upload photos");
       throw new Error("Upload failed");
@@ -90,6 +92,7 @@ export default function AdminPhotosPage() {
     if (res.ok) {
       showToast("success", "Photo deleted");
       setPhotos((prev) => prev.filter((p) => p.id !== deleteId));
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to delete photo");
     }
@@ -129,6 +132,7 @@ export default function AdminPhotosPage() {
         );
         showToast("success", "Placement & photo metadata saved!");
         setEditingPhoto(null);
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to update photo placement");
       }

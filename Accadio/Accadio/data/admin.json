@@ -2,8 +2,8 @@
   {
     "id": "64f6d078-2963-431f-bb08-0dfc34d5b5a7",
     "username": "admin",
-    "passwordHash": "$2b$12$SktNTl7pawRw6UXY/1BkReomXNqueZ2sbmVT8f5ExcRFbUf/mlHdC",
-    "mustChangePassword": true,
+    "passwordHash": "$2b$12$LzwaADQevOLp2T2hUbdKB.3N0ByHt4T1SQ6WaxrHrcPJI1UdDJGvq",
+    "mustChangePassword": false,
     "createdAt": "2026-08-16T13:21:26.289Z"
   }
 ]

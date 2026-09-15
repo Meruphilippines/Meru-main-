@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/abelmathew14july-ship-it/ARB-scan/issues"
   },
-  "homepage": "https://github.com/abelmathew14july-ship-it/ARB-scan#readme"
+  "homepage": "https://github.com/abelmathew14july-ship-it/ARB-scan#readme",
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
 }

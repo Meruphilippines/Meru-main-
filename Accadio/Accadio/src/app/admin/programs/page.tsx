@@ -17,16 +17,23 @@ import { useToast } from "@/components/admin/Toast";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
 import SlotMediaUpload from "@/components/admin/SlotMediaUpload";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface Program {
   id: string;
   name: string;
+  title?: string;       // alias from public API
   description: string;
+  desc?: string;        // alias from public API
   date: string;
   featuredImagePath: string;
   videoUrl?: string;
   category?: string;
   tag?: string;
+  eligibility?: string;
+  benefits?: string[];
+  gradient?: string;
+  iconName?: string;
   createdAt: string;
 }
 
@@ -36,8 +43,12 @@ const emptyForm = {
   date: "",
   featuredImagePath: "",
   videoUrl: "",
-  category: "academic",
-  tag: "Academic Program",
+  category: "exchange",
+  tag: "Global Exchange",
+  eligibility: "",
+  benefitsText: "",
+  gradient: "from-blue-400 to-indigo-500",
+  iconName: "Compass",
 };
 
 export default function AdminProgramsPage() {
@@ -73,35 +84,49 @@ export default function AdminProgramsPage() {
   const openEdit = (item: Program) => {
     setEditId(item.id);
     setForm({
-      name: item.name,
-      description: item.description,
-      date: item.date,
+      name: item.name || item.title || "",
+      description: item.description || item.desc || "",
+      date: item.date || "",
       featuredImagePath: item.featuredImagePath || "",
       videoUrl: item.videoUrl || "",
-      category: item.category || "academic",
-      tag: item.tag || "Academic Program",
+      category: item.category || "exchange",
+      tag: item.tag || "Global Exchange",
+      eligibility: item.eligibility || "",
+      benefitsText: Array.isArray(item.benefits) ? item.benefits.join(", ") : "",
+      gradient: item.gradient || "from-blue-400 to-indigo-500",
+      iconName: item.iconName || "Compass",
     });
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!form.name) {
+    if (!form.name.trim()) {
       showToast("error", "Program name is required");
       return;
     }
     setSaving(true);
+
+    const benefitsArray = form.benefitsText
+      ? form.benefitsText.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    const payload = {
+      ...form,
+      benefits: benefitsArray,
+    };
 
     try {
       if (editId) {
         const res = await fetch(`/api/admin/programs/${editId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           showToast("success", "Program updated!");
           fetchItems();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to update program");
         }
@@ -109,12 +134,13 @@ export default function AdminProgramsPage() {
         const res = await fetch("/api/admin/programs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           showToast("success", "Program added!");
           fetchItems();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to add program");
         }
@@ -134,6 +160,7 @@ export default function AdminProgramsPage() {
     if (res.ok) {
       showToast("success", "Program deleted");
       setItems((prev) => prev.filter((p) => p.id !== deleteId));
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to delete");
     }
@@ -206,6 +233,28 @@ export default function AdminProgramsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600">Portfolio Category *</label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => {
+                      const cat = e.target.value;
+                      const defaultTags: Record<string, string> = {
+                        exchange: "Global Exchange",
+                        corporate: "Corporate Excellence",
+                        youth: "Youth Leadership",
+                        academic: "Academic Exchange",
+                      };
+                      setForm({ ...form, category: cat, tag: defaultTags[cat] || form.tag });
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="exchange">Global Exchange</option>
+                    <option value="corporate">Corporate Excellence</option>
+                    <option value="youth">Youth Leadership</option>
+                    <option value="academic">Academic Exchange</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-600">Category Tag</label>
                   <input
                     type="text"
@@ -215,6 +264,9 @@ export default function AdminProgramsPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-600">Event Date</label>
                   <input
@@ -224,6 +276,43 @@ export default function AdminProgramsPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600">Card Icon</label>
+                  <select
+                    value={form.iconName}
+                    onChange={(e) => setForm({ ...form, iconName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Compass">Compass (Default)</option>
+                    <option value="GraduationCap">Graduation Cap</option>
+                    <option value="Award">Award</option>
+                    <option value="ShieldCheck">Shield Check</option>
+                    <option value="Users">Users</option>
+                    <option value="Globe">Globe</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Eligibility Criteria</label>
+                <input
+                  type="text"
+                  value={form.eligibility}
+                  onChange={(e) => setForm({ ...form, eligibility: e.target.value })}
+                  placeholder="e.g. Open to undergraduate and graduate students..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Key Benefits (Comma separated)</label>
+                <input
+                  type="text"
+                  value={form.benefitsText}
+                  onChange={(e) => setForm({ ...form, benefitsText: e.target.value })}
+                  placeholder="e.g. 8 ECTS Academic Credits, University Housing, Mentorship"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                />
               </div>
 
               <div className="space-y-1.5">

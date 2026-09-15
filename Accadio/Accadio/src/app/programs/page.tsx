@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search,
@@ -58,7 +59,6 @@ function ProgramsCatalog() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Registration Modal state
   const [registeringProgram, setRegisteringProgram] = useState<ProgramItem | null>(null);
@@ -91,26 +91,22 @@ function ProgramsCatalog() {
     setActiveCategory(cat);
   }, [searchParams]);
 
-  // Fetch dynamic programs from API
-  useEffect(() => {
-    setLoading(true);
-    const query = new URLSearchParams();
-    if (activeCategory !== "all") query.set("cat", activeCategory);
-    if (searchQuery) query.set("q", searchQuery);
+  const [customContent, setCustomContent] = useState<string | null>(null);
 
-    fetch(`/api/programs?${query.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setPrograms(data);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load programs:", err);
-        setLoading(false);
-      });
-  }, [activeCategory, searchQuery]);
+  // Live-polling: page custom content (every 5 s or on focus)
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/programs", 5000);
+  useEffect(() => {
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
+
+  // Live-polling: programs catalog (re-runs on category/search change via URL)
+  const query = new URLSearchParams();
+  if (activeCategory !== "all") query.set("cat", activeCategory);
+  if (searchQuery) query.set("q", searchQuery);
+  const { data: livePrograms, loading } = useLiveData<ProgramItem[]>(`/api/programs?${query.toString()}`, 5000);
+  useEffect(() => {
+    if (Array.isArray(livePrograms)) setPrograms(livePrograms);
+  }, [livePrograms]);
 
   const handleCategoryChange = (cat: string) => {
     setActiveCategory(cat);
@@ -194,6 +190,16 @@ function ProgramsCatalog() {
           Accredited modular frameworks tailored for university exchange, corporate governance, and youth civic engagement.
         </p>
       </div>
+
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && customContent.trim() !== "<p></p>" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       {/* Filter and Search Panel */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-6">

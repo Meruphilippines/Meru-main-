@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
@@ -81,6 +82,13 @@ export async function POST(request: Request) {
       },
     });
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/testimonials");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json(
       {
         id: newTestimonial.id,
@@ -103,3 +111,4 @@ export async function POST(request: Request) {
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

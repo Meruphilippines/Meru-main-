@@ -4,6 +4,16 @@ import { sendInquiryEmails } from "../lib/email";
 
 const router = Router();
 
+function safeParseArray(val: string | null | undefined): string[] {
+  if (!val) return [];
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch {
+    return val ? [val] : [];
+  }
+}
+
 // GET /api/programs
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -20,9 +30,9 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 
     if (q) {
       where.OR = [
-        { title: { contains: q } },
-        { desc: { contains: q } },
-        { tag: { contains: q } },
+        { title: { contains: q, mode: "insensitive" } },
+        { desc: { contains: q, mode: "insensitive" } },
+        { tag: { contains: q, mode: "insensitive" } },
       ];
     }
 
@@ -39,13 +49,18 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       tag: p.tag,
       desc: p.desc,
       eligibility: p.eligibility || "",
-      benefits: p.benefits ? JSON.parse(p.benefits) : [],
-      gradient: p.gradient,
-      iconName: p.iconName,
-      date: p.date,
-      featuredImagePath: p.featuredImagePath,
+      benefits: safeParseArray(p.benefits),
+      gradient: p.gradient || "from-blue-400 to-indigo-500",
+      iconName: p.iconName || "Compass",
+      date: p.date || "",
+      featuredImagePath: p.featuredImagePath || "",
       videoUrl: p.videoUrl || "",
     }));
+
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+    });
 
     res.json(formatted);
   } catch (error) {
@@ -98,11 +113,11 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     res.status(201).json({
       success: true,
       message: `Successfully registered for "${registration.programName}". The admissions board will review your application.`,
-      registrationId: registration.id,
+      id: registration.id,
     });
   } catch (error) {
     console.error("Program registration error:", error);
-    res.status(500).json({ error: "Internal server error. Please try again." });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

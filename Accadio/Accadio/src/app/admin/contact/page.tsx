@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Save, Phone, Mail, MapPin, Video as YoutubeIcon } from "lucide-react";
 import { useToast } from "@/components/admin/Toast";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 const FacebookIcon = ({ className = "h-3.5 w-3.5" }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -69,6 +70,7 @@ export default function AdminContactPage() {
       });
       if (res.ok) {
         showToast("success", "Contact info saved!");
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to save contact info");
       }

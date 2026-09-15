@@ -1,14 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, MapPin, Newspaper, Check, Send, Globe, Star } from "lucide-react";
+
+interface NewsArticle {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  desc: string;
+  content?: string;
+  gradient: string;
+  imagePath?: string;
+}
 
 export default function NewsPage() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
+  const [customContent, setCustomContent] = useState<string | null>(null);
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/news", 5000);
+  const { data: liveNews } = useLiveData<NewsArticle[]>("/api/news", 5000);
+
+  useEffect(() => {
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
+
+  useEffect(() => {
+    if (Array.isArray(liveNews) && liveNews.length > 0) {
+      setNewsArticles(liveNews);
+    }
+  }, [liveNews]);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,32 +49,35 @@ export default function NewsPage() {
     }, 1200);
   };
 
-  const newsArticles = [
+  const defaultArticles: NewsArticle[] = [
     {
-      id: 1,
+      id: "default-1",
       date: "May 28, 2026",
       category: "Expansion",
       title: "Meru Global Team Establishes Regional Center in Bogota",
       desc: "Our South American operations office is now fully staffed and coordinating with municipal education departments to roll out subsidized civic fellowships.",
-      grad: "from-blue-400 to-indigo-500",
+      gradient: "from-blue-400 to-indigo-500",
     },
     {
-      id: 2,
+      id: "default-2",
       date: "May 15, 2026",
       category: "Admissions",
       title: "Announcing the 2026 Youth Civic Leadership Fellowship Roster",
       desc: "Following a record 4,200 applicants, our advisory board has finalized the 120 delegates who will receive seed grant credentials and 6 months of civic coaching.",
-      grad: "from-purple-400 to-pink-500",
+      gradient: "from-purple-400 to-pink-500",
     },
     {
-      id: 3,
+      id: "default-3",
       date: "April 10, 2026",
       category: "Partnerships",
       title: "Meru Partners with 12 New European Academic Councils",
       desc: "The joint agreement facilitates direct credit transfers and curriculum recognition, allowing exchange participants in Germany to earn ECTS credits smoothly.",
-      grad: "from-emerald-400 to-teal-500",
+      gradient: "from-emerald-400 to-teal-500",
     },
   ];
+
+  // Use live articles from DB if available, otherwise show defaults
+  const displayArticles = newsArticles.length > 0 ? newsArticles : defaultArticles;
 
   const events = [
     {
@@ -100,6 +131,16 @@ export default function NewsPage() {
         </p>
       </div>
 
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && customContent.trim() !== "<p></p>" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12">
         
         {/* Left Column: News Articles */}
@@ -110,30 +151,57 @@ export default function NewsPage() {
           </h2>
           
           <div className="space-y-6">
-            {newsArticles.map((article) => (
+            {displayArticles.map((article) => (
               <div
                 key={article.id}
-                className="bg-white rounded-3xl border border-slate-100 overflow-hidden p-6 sm:p-8 shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row gap-6"
+                onClick={() => setSelectedArticle(article)}
+                className="bg-white rounded-3xl border border-slate-100 overflow-hidden p-6 sm:p-8 shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row gap-6 cursor-pointer group"
               >
-                {/* Visual date card */}
-                <div className={`sm:w-36 h-28 bg-gradient-to-tr ${article.grad} rounded-2xl flex flex-col items-center justify-center text-white p-4 flex-shrink-0 shadow-xs relative`}>
-                  <div className="absolute inset-0 bg-slate-950/10" />
-                  <span className="text-xs font-black uppercase tracking-wider z-10">{article.category}</span>
-                  <span className="text-[10px] text-white/80 font-bold mt-1 z-10">{article.date.split(",")[0]}</span>
+                {/* Visual date or image card */}
+                <div
+                  className={`sm:w-36 h-28 ${
+                    article.imagePath
+                      ? "bg-slate-100"
+                      : `bg-gradient-to-tr ${article.gradient || "from-blue-400 to-indigo-500"}`
+                  } rounded-2xl flex flex-col items-center justify-center text-white p-4 flex-shrink-0 shadow-xs relative overflow-hidden`}
+                >
+                  {article.imagePath ? (
+                    <>
+                      <img
+                        src={article.imagePath}
+                        alt={article.title}
+                        className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-950/10 group-hover:bg-slate-950/20 transition-colors" />
+                  )}
+                  <span className="text-xs font-black uppercase tracking-wider z-10 drop-shadow-sm text-center">
+                    {article.category}
+                  </span>
+                  <span className="text-[10px] text-white/90 font-bold mt-1 z-10 drop-shadow-sm">
+                    {article.date.split(",")[0]}
+                  </span>
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between space-y-3">
                   <div>
-                    <h3 className="font-heading text-lg font-extrabold text-slate-900 leading-snug hover:text-blue-600 transition-colors cursor-pointer">
+                    <h3 className="font-heading text-lg font-extrabold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors">
                       {article.title}
                     </h3>
-                    <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-2">
+                    <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-2 line-clamp-3">
                       {article.desc}
                     </p>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    Published by Media Relations Board
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      Published by Media Relations Board
+                    </span>
+                    <span className="text-xs font-bold text-blue-600 group-hover:underline">
+                      Read full update &rarr;
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -297,6 +365,74 @@ export default function NewsPage() {
               >
                 Register & Save Seat
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Article Detail Modal */}
+      <AnimatePresence>
+        {selectedArticle && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setSelectedArticle(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-slate-100 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+            >
+              {selectedArticle.imagePath ? (
+                <div className="w-full h-56 rounded-2xl overflow-hidden relative shadow-xs">
+                  <img
+                    src={selectedArticle.imagePath}
+                    alt={selectedArticle.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-xs font-bold text-white uppercase tracking-wider">
+                    {selectedArticle.category}
+                  </div>
+                </div>
+              ) : (
+                <div className={`w-full h-32 rounded-2xl bg-gradient-to-tr ${selectedArticle.gradient || "from-blue-400 to-indigo-500"} p-6 flex flex-col justify-end text-white relative shadow-xs`}>
+                  <div className="absolute inset-0 bg-slate-950/10 rounded-2xl" />
+                  <span className="text-xs font-black uppercase tracking-wider z-10">{selectedArticle.category}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-slate-400 font-bold border-b border-slate-100 pb-3">
+                <span>Published: {selectedArticle.date}</span>
+                <span className="uppercase tracking-wider">Official Press Release</span>
+              </div>
+
+              <div>
+                <h2 className="font-heading text-2xl font-extrabold text-slate-900 leading-snug">
+                  {selectedArticle.title}
+                </h2>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed mt-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  {selectedArticle.desc}
+                </p>
+              </div>
+
+              {selectedArticle.content && (
+                <div className="prose prose-slate max-w-none text-sm text-slate-700 font-medium leading-relaxed">
+                  <p className="whitespace-pre-line">{selectedArticle.content}</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end pt-2">
+                <button
+                  onClick={() => setSelectedArticle(null)}
+                  className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Close Update
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

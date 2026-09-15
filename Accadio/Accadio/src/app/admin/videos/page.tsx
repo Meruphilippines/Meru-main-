@@ -18,6 +18,7 @@ import { useToast } from "@/components/admin/Toast";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import MediaUpload from "@/components/admin/MediaUpload";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface MediaItem {
   id: string;
@@ -95,6 +96,7 @@ export default function AdminVideosPage() {
     if (res.ok) {
       showToast("success", `${files.length} video(s) uploaded!`);
       fetchVideos();
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to upload video");
       throw new Error("Upload failed");
@@ -110,6 +112,7 @@ export default function AdminVideosPage() {
       setEmbeds((prev) => prev.filter((e) => e.id !== deleteId));
       showToast("success", "Embedded video removed");
       setDeleteId(null);
+      notifyLiveUpdate();
       return;
     }
 
@@ -117,6 +120,7 @@ export default function AdminVideosPage() {
     if (res.ok) {
       showToast("success", "Video deleted");
       setVideos((prev) => prev.filter((v) => v.id !== deleteId));
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to delete video");
     }
@@ -156,6 +160,7 @@ export default function AdminVideosPage() {
         );
         showToast("success", "Video placement & details updated!");
         setEditingVideo(null);
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to update video details");
       }

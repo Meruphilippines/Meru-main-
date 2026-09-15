@@ -4,6 +4,16 @@ import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
+function safeParseArray(val: string | null | undefined): string[] {
+  if (!val) return [];
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch {
+    return val ? [val] : [];
+  }
+}
+
 // GET /api/admin/programs
 router.get("/", requireAuth, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -22,6 +32,10 @@ router.get("/", requireAuth, async (_req: AuthenticatedRequest, res: Response): 
       videoUrl: p.videoUrl || "",
       category: p.category,
       tag: p.tag,
+      eligibility: p.eligibility || "",
+      benefits: safeParseArray(p.benefits),
+      gradient: p.gradient || "from-blue-400 to-indigo-500",
+      iconName: p.iconName || "Compass",
       createdAt: p.createdAt.toISOString(),
     }));
 
@@ -38,9 +52,9 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): 
     const body = req.body;
     const title = body.title || body.name;
     const desc = body.desc || body.description || "";
-    const { date, featuredImagePath, videoUrl, category, tag, eligibility, benefits, gradient } = body;
+    const { date, featuredImagePath, videoUrl, category, tag, eligibility, benefits, gradient, iconName } = body;
 
-    if (!title) {
+    if (!title || !String(title).trim()) {
       res.status(400).json({ error: "Program name is required" });
       return;
     }
@@ -49,16 +63,17 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): 
 
     const newProgram = await prisma.program.create({
       data: {
-        title,
-        desc,
-        category: category || "general",
-        tag: tag || "Program",
+        title: String(title).trim(),
+        desc: String(desc).trim(),
+        category: category || "academic",
+        tag: tag || "Academic Program",
         date: date || "",
         featuredImagePath: featuredImagePath || "",
         videoUrl: videoUrl || "",
         eligibility: eligibility || null,
         benefits: benefits ? (typeof benefits === "string" ? benefits : JSON.stringify(benefits)) : null,
         gradient: gradient || "from-blue-400 to-indigo-500",
+        iconName: iconName || "Compass",
         order: count + 1,
       },
     });
@@ -74,6 +89,10 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): 
       videoUrl: newProgram.videoUrl,
       category: newProgram.category,
       tag: newProgram.tag,
+      eligibility: newProgram.eligibility || "",
+      benefits: safeParseArray(newProgram.benefits),
+      gradient: newProgram.gradient,
+      iconName: newProgram.iconName,
       createdAt: newProgram.createdAt.toISOString(),
     });
   } catch (error) {
@@ -104,6 +123,10 @@ router.get("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
       videoUrl: item.videoUrl || "",
       category: item.category,
       tag: item.tag,
+      eligibility: item.eligibility || "",
+      benefits: safeParseArray(item.benefits),
+      gradient: item.gradient || "from-blue-400 to-indigo-500",
+      iconName: item.iconName || "Compass",
       createdAt: item.createdAt.toISOString(),
     });
   } catch (error) {
@@ -122,8 +145,8 @@ router.put("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
     const desc = body.desc !== undefined ? body.desc : body.description;
 
     const updateData: any = {};
-    if (title !== undefined) updateData.title = title;
-    if (desc !== undefined) updateData.desc = desc;
+    if (title !== undefined) updateData.title = String(title).trim();
+    if (desc !== undefined) updateData.desc = String(desc).trim();
     if (body.date !== undefined) updateData.date = body.date;
     if (body.featuredImagePath !== undefined) updateData.featuredImagePath = body.featuredImagePath;
     if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
@@ -134,6 +157,7 @@ router.put("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
       updateData.benefits = typeof body.benefits === "string" ? body.benefits : JSON.stringify(body.benefits);
     }
     if (body.gradient !== undefined) updateData.gradient = body.gradient;
+    if (body.iconName !== undefined) updateData.iconName = body.iconName;
 
     const updated = await prisma.program.update({
       where: { id },
@@ -151,6 +175,10 @@ router.put("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
       videoUrl: updated.videoUrl,
       category: updated.category,
       tag: updated.tag,
+      eligibility: updated.eligibility || "",
+      benefits: safeParseArray(updated.benefits),
+      gradient: updated.gradient,
+      iconName: updated.iconName,
       createdAt: updated.createdAt.toISOString(),
     });
   } catch (error) {

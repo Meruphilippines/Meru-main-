@@ -2,6 +2,7 @@ import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { uploadFile } from "@/lib/storage";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import path from "path";
 
 export async function GET() {
@@ -126,9 +127,16 @@ export async function POST(request: Request) {
       });
     }
 
+    try {
+      revalidatePath("/", "layout");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json({ uploaded, total: uploaded.length }, { status: 201 });
   } catch (error) {
     console.error("Media POST error:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { sendInquiryEmails } from "@/lib/email";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const contactInfo = await prisma.contactInfo.findFirst();
@@ -37,28 +40,48 @@ export async function GET() {
       },
     ];
 
+    const noCacheHeaders = {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+    };
+
     if (!contactInfo) {
-      return NextResponse.json({
-        phone: "+44 20 7946 0192",
-        email: "connect@meruglobal.org",
-        address: "120 St James's Square, London, SW1Y 4JH",
-        socialLinks: {},
-        googleMapsEmbed: "",
-        offices: fallbackOffices,
-      });
+      return NextResponse.json(
+        {
+          phone: "+44 20 7946 0192",
+          email: "connect@meruglobal.org",
+          address: "120 St James's Square, London, SW1Y 4JH",
+          socialLinks: {},
+          googleMapsEmbed: "",
+          offices: fallbackOffices,
+        },
+        { headers: noCacheHeaders }
+      );
     }
 
-    return NextResponse.json({
-      phone: contactInfo.phone,
-      email: contactInfo.email,
-      address: contactInfo.address,
-      socialLinks: contactInfo.socialLinks ? JSON.parse(contactInfo.socialLinks) : {},
-      googleMapsEmbed: contactInfo.googleMapsEmbed || "",
-      offices: contactInfo.offices ? JSON.parse(contactInfo.offices) : fallbackOffices,
-    });
+    return NextResponse.json(
+      {
+        phone: contactInfo.phone,
+        email: contactInfo.email,
+        address: contactInfo.address,
+        socialLinks: contactInfo.socialLinks ? JSON.parse(contactInfo.socialLinks) : {},
+        googleMapsEmbed: contactInfo.googleMapsEmbed || "",
+        offices: contactInfo.offices ? JSON.parse(contactInfo.offices) : fallbackOffices,
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     console.error("Public contact GET error:", error);
-    return NextResponse.json({ error: "Failed to load contact information" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load contact information" },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   }
 }
 

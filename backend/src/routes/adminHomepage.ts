@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { readData, writeData } from "../lib/db";
+import prisma from "../lib/prisma";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
@@ -33,10 +33,39 @@ const defaultHomepage: HomepageData = {
 // GET /api/admin/homepage
 router.get("/", requireAuth, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const homepage = readData<HomepageData>("homepage.json", defaultHomepage);
-    res.json(homepage);
+    const dbSetting = await prisma.homepageSetting.findFirst();
+
+    if (dbSetting) {
+      let parsedTickers: any[] = [];
+      try {
+        parsedTickers = dbSetting.tickerItems ? JSON.parse(dbSetting.tickerItems) : [];
+      } catch {
+        parsedTickers = [];
+      }
+
+      const tickerItems = parsedTickers.map((t: any, idx: number) => ({
+        id: t.id || `ticker-${idx + 1}`,
+        label: t.label || "NEWS",
+        date: t.date || "",
+        text: t.text || "",
+        color: t.color || "blue",
+      }));
+
+      res.json({
+        heroTitle: dbSetting.heroTitle || defaultHomepage.heroTitle,
+        heroSubtitle: dbSetting.heroSubtitle || defaultHomepage.heroSubtitle,
+        heroImagePath: "",
+        heroVideoUrl: "",
+        logoRotation: true,
+        tickerItems,
+        lastUpdated: dbSetting.lastUpdated.toISOString(),
+      });
+      return;
+    }
+
+    res.json(defaultHomepage);
   } catch (error) {
-    console.error("Homepage GET error:", error);
+    console.error("Admin Homepage GET error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -45,18 +74,38 @@ router.get("/", requireAuth, async (_req: AuthenticatedRequest, res: Response): 
 router.put("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const body = req.body;
-    const current = readData<HomepageData>("homepage.json", defaultHomepage);
+    const heroTitle = body.heroTitle || defaultHomepage.heroTitle;
+    const heroSubtitle = body.heroSubtitle || defaultHomepage.heroSubtitle;
+    const tickerItems = Array.isArray(body.tickerItems) ? body.tickerItems : [];
 
-    const updated: HomepageData = {
-      ...current,
-      ...body,
-      lastUpdated: new Date().toISOString(),
-    };
+    const updated = await prisma.homepageSetting.upsert({
+      where: { id: "default" },
+      update: {
+        heroTitle,
+        heroSubtitle,
+        tickerItems: JSON.stringify(tickerItems),
+        lastUpdated: new Date(),
+      },
+      create: {
+        id: "default",
+        heroTitle,
+        heroSubtitle,
+        tickerItems: JSON.stringify(tickerItems),
+        lastUpdated: new Date(),
+      },
+    });
 
-    writeData("homepage.json", updated);
-    res.json(updated);
+    res.json({
+      heroTitle: updated.heroTitle,
+      heroSubtitle: updated.heroSubtitle,
+      heroImagePath: body.heroImagePath || "",
+      heroVideoUrl: body.heroVideoUrl || "",
+      logoRotation: body.logoRotation !== undefined ? body.logoRotation : true,
+      tickerItems,
+      lastUpdated: updated.lastUpdated.toISOString(),
+    });
   } catch (error) {
-    console.error("Homepage PUT error:", error);
+    console.error("Admin Homepage PUT error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

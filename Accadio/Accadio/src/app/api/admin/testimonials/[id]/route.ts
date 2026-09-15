@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   request: Request,
@@ -89,6 +90,13 @@ export async function PUT(
       data: updateData,
     });
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/testimonials");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json({
       id: updated.id,
       name: updated.author || updated.speaker || updated.title || "Anonymous",
@@ -127,9 +135,17 @@ export async function DELETE(
       where: { id },
     });
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/testimonials");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     console.error("Testimonial DELETE error:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

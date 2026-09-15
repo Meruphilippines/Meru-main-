@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send, MessageSquare, AlertCircle, Loader2 } from "lucide-react";
@@ -39,18 +40,19 @@ function ContactForm() {
   });
 
   const [contactDetails, setContactDetails] = useState<ContactDetails | null>(null);
+  const [customContent, setCustomContent] = useState<string | null>(null);
 
-  // Fetch dynamic contact data & offices from database API
+  // Live-polling: contact info and page content refresh automatically every 5 s, on focus, and on broadcast
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/contact", 5000);
+  const { data: liveContact } = useLiveData<ContactDetails>("/api/contact", 5000);
+
   useEffect(() => {
-    fetch("/api/contact")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.offices) {
-          setContactDetails(data);
-        }
-      })
-      .catch((err) => console.error("Error fetching contact details:", err));
-  }, []);
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
+
+  useEffect(() => {
+    if (liveContact) setContactDetails(liveContact);
+  }, [liveContact]);
 
   // Auto-populate program from query string if passing from Programs page
   useEffect(() => {
@@ -150,6 +152,16 @@ function ContactForm() {
           Select specific departments for admissions, partnerships, technical support, or regional coordinates.
         </p>
       </div>
+
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mb-24">
         {/* Left Column: Form */}

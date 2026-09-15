@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 const defaultContact = {
   phone: "+44 20 7946 0192",
@@ -82,6 +83,13 @@ export async function PUT(request: Request) {
           lastUpdated: new Date(),
         },
       });
+    }
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/contact");
+    } catch (e) {
+      // ignore
     }
 
     return Response.json({

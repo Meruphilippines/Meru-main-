@@ -19,6 +19,7 @@ import adminInboxRouter from "./routes/adminInbox";
 import adminContactRouter from "./routes/adminContact";
 import adminRegistrationsRouter from "./routes/adminRegistrations";
 import adminHomepageRouter from "./routes/adminHomepage";
+import adminNewsRouter from "./routes/adminNews";
 
 import publicProgramsRouter from "./routes/publicPrograms";
 import publicTestimonialsRouter from "./routes/publicTestimonials";
@@ -26,15 +27,32 @@ import publicHistoryRouter from "./routes/publicHistory";
 import publicMediaRouter from "./routes/publicMedia";
 import publicContactRouter from "./routes/publicContact";
 import publicPagesRouter from "./routes/publicPages";
+import publicHomepageRouter from "./routes/publicHomepage";
+import publicNewsRouter from "./routes/publicNews";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-// CORS configuration
+// CORS configuration supporting local dev, Render, Vercel, and production domains
 app.use(
   cors({
-    origin: [FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true);
+      // Allow any vercel preview/prod domain, localhost, or configured FRONTEND_URL
+      if (
+        origin === FRONTEND_URL ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        origin.includes("vercel.app") ||
+        origin.includes("onrender.com") ||
+        origin.includes("meruglobal")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -65,8 +83,11 @@ app.use("/api/admin/inbox", adminInboxRouter);
 app.use("/api/admin/contact", adminContactRouter);
 app.use("/api/admin/registrations", adminRegistrationsRouter);
 app.use("/api/admin/homepage", adminHomepageRouter);
+app.use("/api/admin/news", adminNewsRouter);
 
 // Mount Public Routes
+app.use("/api/homepage", publicHomepageRouter);
+app.use("/api/news", publicNewsRouter);
 app.use("/api/programs", publicProgramsRouter);
 app.use("/api/testimonials", publicTestimonialsRouter);
 app.use("/api/history", publicHistoryRouter);

@@ -5,6 +5,8 @@ import { Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { useToast } from "@/components/admin/Toast";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
 
+import { notifyLiveUpdate } from "@/lib/liveSync";
+
 interface TickerItem {
   id: string;
   label: string;
@@ -33,7 +35,16 @@ export default function AdminHomepagePage() {
   useEffect(() => {
     fetch("/api/admin/homepage")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
+      .then((d) => {
+        if (d && Array.isArray(d.tickerItems)) {
+          d.tickerItems = d.tickerItems.map((t: TickerItem, idx: number) => ({
+            ...t,
+            id: t.id || `ticker-${idx}-${Date.now()}`,
+          }));
+        }
+        setData(d);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -48,6 +59,7 @@ export default function AdminHomepagePage() {
       });
       if (res.ok) {
         showToast("success", "Homepage settings saved successfully!");
+        notifyLiveUpdate();
       } else {
         showToast("error", "Failed to save homepage settings");
       }

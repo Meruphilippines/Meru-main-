@@ -2,6 +2,9 @@ import prisma from "@/lib/prisma";
 import { readData } from "@/lib/db";
 import { DEFAULT_PAGE_CONTENTS } from "@/lib/defaultPageContents";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageData {
   id: string;
   slug: string;
@@ -24,14 +27,21 @@ export async function GET(
     });
 
     if (dbPage && dbPage.status === "published" && dbPage.content) {
-      return Response.json({
-        id: dbPage.id,
-        slug: dbPage.slug,
-        title: dbPage.title,
-        content: dbPage.content,
-        status: dbPage.status,
-        lastUpdated: dbPage.lastUpdated.toISOString(),
-      });
+      return Response.json(
+        {
+          id: dbPage.id,
+          slug: dbPage.slug,
+          title: dbPage.title,
+          content: dbPage.content,
+          status: dbPage.status,
+          lastUpdated: dbPage.lastUpdated.toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        }
+      );
     }
 
     // Check pages.json
@@ -39,24 +49,51 @@ export async function GET(
     const jsonPage = pages.find((p) => p.slug === slug);
 
     if (jsonPage && jsonPage.status === "published" && jsonPage.content) {
-      return Response.json(jsonPage);
+      return Response.json(jsonPage, {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      });
     }
 
     // Fallback default content
     const defaultContent = DEFAULT_PAGE_CONTENTS[slug];
     if (defaultContent) {
-      return Response.json({
-        slug,
-        title: slug.charAt(0).toUpperCase() + slug.slice(1),
-        content: defaultContent,
-        status: "published",
-        lastUpdated: new Date().toISOString(),
-      });
+      return Response.json(
+        {
+          slug,
+          title: slug.charAt(0).toUpperCase() + slug.slice(1),
+          content: defaultContent,
+          status: "published",
+          lastUpdated: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        }
+      );
     }
 
-    return Response.json({ error: "Page not found" }, { status: 404 });
+    return Response.json(
+      { error: "Page not found" },
+      {
+        status: 404,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Public page GET error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return Response.json(
+      { error: "Internal server error" },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   }
 }

@@ -18,6 +18,7 @@ import { useToast } from "@/components/admin/Toast";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import LoadingSpinner from "@/components/admin/LoadingSpinner";
 import SlotMediaUpload from "@/components/admin/SlotMediaUpload";
+import { notifyLiveUpdate } from "@/lib/liveSync";
 
 interface Testimonial {
   id: string;
@@ -107,6 +108,7 @@ export default function AdminTestimonialsPage() {
           showToast("success", "Testimonial updated!");
           fetchItems();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to update testimonial");
         }
@@ -120,6 +122,7 @@ export default function AdminTestimonialsPage() {
           showToast("success", "Testimonial added!");
           fetchItems();
           setShowForm(false);
+          notifyLiveUpdate();
         } else {
           showToast("error", "Failed to add testimonial");
         }
@@ -139,6 +142,7 @@ export default function AdminTestimonialsPage() {
     if (res.ok) {
       showToast("success", "Testimonial deleted");
       setItems((prev) => prev.filter((t) => t.id !== deleteId));
+      notifyLiveUpdate();
     } else {
       showToast("error", "Failed to delete");
     }
@@ -156,6 +160,7 @@ export default function AdminTestimonialsPage() {
 
     const updates = reordered.map((item, i) => ({ ...item, displayOrder: i }));
     setItems(updates);
+    notifyLiveUpdate();
 
     for (const item of [updates[idx], updates[newIdx]]) {
       await fetch(`/api/admin/testimonials/${item.id}`, {

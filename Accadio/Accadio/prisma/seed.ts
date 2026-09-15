@@ -7,17 +7,17 @@ async function main() {
   console.log("🌱 Starting Accadio database seed...");
 
   // 1. Seed Admin User
-  const passwordHash = await bcrypt.hash("MeruAdmin2026!", 12);
+  const passwordHash = await bcrypt.hash("meruadmin2026!", 12);
   const admin = await prisma.adminUser.upsert({
     where: { username: "admin" },
-    update: {},
+    update: { passwordHash, mustChangePassword: false },
     create: {
       username: "admin",
       passwordHash,
       mustChangePassword: false,
     },
   });
-  console.log(`✓ Admin user created: ${admin.username} (password: MeruAdmin2026!)`);
+  console.log(`✓ Admin user created/updated: ${admin.username} (password: meruadmin2026!)`);
 
   // 2. Seed Programs
   const programsData = [

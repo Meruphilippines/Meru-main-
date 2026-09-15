@@ -3,6 +3,7 @@ import { readData, writeData } from "@/lib/db";
 import prisma from "@/lib/prisma";
 import { DEFAULT_PAGE_CONTENTS } from "@/lib/defaultPageContents";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 interface PageData {
   id: string;
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const headersList = await headers();
     const cookieHeader = headersList.get("cookie");
-    const session = getSessionFromCookie(cookieHeader);
+    const session = await getSessionFromCookie(cookieHeader);
 
     if (!session) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,7 +77,7 @@ export async function PUT(
   try {
     const headersList = await headers();
     const cookieHeader = headersList.get("cookie");
-    const session = getSessionFromCookie(cookieHeader);
+    const session = await getSessionFromCookie(cookieHeader);
 
     if (!session) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -139,6 +140,13 @@ export async function PUT(
       console.error("Prisma page sync error on PUT:", dbErr);
     }
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath(`/${updatedPage.slug}`);
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json(updatedPage);
   } catch (error) {
     console.error("Page PUT error:", error);
@@ -153,7 +161,7 @@ export async function DELETE(
   try {
     const headersList = await headers();
     const cookieHeader = headersList.get("cookie");
-    const session = getSessionFromCookie(cookieHeader);
+    const session = await getSessionFromCookie(cookieHeader);
 
     if (!session) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -177,9 +185,16 @@ export async function DELETE(
       console.error("Prisma page delete error:", dbErr);
     }
 
+    try {
+      revalidatePath("/", "layout");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     console.error("Page DELETE error:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

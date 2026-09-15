@@ -2,6 +2,7 @@ import { getSessionFromCookie } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function PUT(
   request: Request,
@@ -33,6 +34,12 @@ export async function PUT(
       where: { id },
       data: updateData,
     });
+
+    try {
+      revalidatePath("/", "layout");
+    } catch (e) {
+      // ignore
+    }
 
     return Response.json(updated);
   } catch (error) {
@@ -73,9 +80,16 @@ export async function DELETE(
       where: { id },
     });
 
+    try {
+      revalidatePath("/", "layout");
+    } catch (e) {
+      // ignore
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     console.error("Media DELETE error:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

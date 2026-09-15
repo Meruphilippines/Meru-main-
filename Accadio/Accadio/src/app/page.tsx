@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { motion } from "framer-motion";
 import { Award, ShieldCheck, HeartHandshake, Compass, Users, Sparkles, Send } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -53,8 +54,41 @@ export default function HomePage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", message: "" });
+  const [contactEmail, setContactEmail] = useState("connect@meruglobal.org");
+  const [customContent, setCustomContent] = useState<string | null>(null);
+  const [spotlightMedia, setSpotlightMedia] = useState<Array<{
+    id: string;
+    filename: string;
+    title: string;
+    caption: string;
+    url: string;
+    type: string;
+  }>>([]);
 
   const starsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [homepageData, setHomepageData] = useState<{
+    heroTitle: string;
+    heroSubtitle: string;
+    heroImagePath?: string;
+    heroVideoUrl?: string;
+    logoRotation?: boolean;
+    tickerItems: Array<{ id?: string; label: string; date: string; text: string; color: string }>;
+  } | null>(null);
+
+  // Live-polling data sources – auto-refresh every 5 s, on tab focus, and on admin broadcast
+  const { data: liveHomepage } = useLiveData<typeof homepageData>("/api/homepage", 5000);
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/home", 5000);
+  const { data: liveMedia } = useLiveData<typeof spotlightMedia>("/api/media?placement=homepage", 5000);
+  const { data: liveContact } = useLiveData<{ email?: string }>("/api/contact", 5000);
+
+  useEffect(() => { if (liveHomepage) setHomepageData(liveHomepage); }, [liveHomepage]);
+  useEffect(() => {
+    if (livePageContent?.content && livePageContent.content.trim() !== "<p></p>") {
+      setCustomContent(livePageContent.content);
+    }
+  }, [livePageContent]);
+  useEffect(() => { if (Array.isArray(liveMedia)) setSpotlightMedia(liveMedia); }, [liveMedia]);
+  useEffect(() => { if (liveContact?.email) setContactEmail(liveContact.email); }, [liveContact]);
 
   useEffect(() => {
     const canvas = starsCanvasRef.current;
@@ -148,22 +182,61 @@ export default function HomePage() {
   return (
     <div className="w-full relative overflow-hidden bg-slate-50/20 font-sans">
 
-      {/* 1. HERO — animated logo only */}
+      {/* 1. HERO — animated logo and dynamic admin settings */}
       <section className="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-[#05070f] px-5 py-16 border-b border-slate-900 overflow-hidden">
         {/* Starfield background */}
         <canvas ref={starsCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-0" />
+
+        {/* Optional Hero Background Image / Video from Admin */}
+        {homepageData?.heroVideoUrl ? (
+          <div className="absolute inset-0 z-0 opacity-20 pointer-events-none overflow-hidden">
+            {homepageData.heroVideoUrl.includes("youtube.com") || homepageData.heroVideoUrl.includes("youtu.be") ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${homepageData.heroVideoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] || ""}?autoplay=1&mute=1&loop=1&playlist=${homepageData.heroVideoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] || ""}&controls=0`}
+                className="w-full h-full object-cover scale-150 pointer-events-none"
+                allow="autoplay; encrypted-media"
+              />
+            ) : (
+              <video
+                src={homepageData.heroVideoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            )}
+          </div>
+        ) : homepageData?.heroImagePath ? (
+          <div
+            className="absolute inset-0 z-0 opacity-25 pointer-events-none bg-cover bg-center"
+            style={{ backgroundImage: `url(${homepageData.heroImagePath})` }}
+          />
+        ) : null}
 
         {/* Ambient glows */}
         <div className="glow-orb left" />
         <div className="glow-orb right" />
 
         <motion.div
-          className="relative z-10"
+          className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto px-4"
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7 }}
         >
-          <Logo variant="vertical" iconSize={240} animateGlobe={true} hero3d={true} />
+          <Logo
+            variant="vertical"
+            iconSize={220}
+            animateGlobe={homepageData?.logoRotation !== false}
+            hero3d={true}
+            title="MERU"
+            subtitle={homepageData?.heroTitle || "Reaching The Unreached"}
+          />
+          {homepageData?.heroSubtitle && (
+            <p className="text-slate-300 font-medium text-sm sm:text-base md:text-lg max-w-2xl mt-4 leading-relaxed tracking-wide text-center">
+              {homepageData.heroSubtitle}
+            </p>
+          )}
         </motion.div>
       </section>
 
@@ -179,43 +252,54 @@ export default function HomePage() {
 
           <div className="w-full relative flex overflow-x-hidden">
             <div className="animate-marquee whitespace-nowrap flex gap-12 font-medium text-sm text-slate-300 items-center">
-              <span>
-                <strong className="text-blue-400 mr-2">[JUNE 2026 - EVENT]</strong>
-                {t("ticker.item2")}
-              </span>
-              <span>
-                <strong className="text-emerald-400 mr-2">[MAY 2026 - EXPANSION]</strong>
-                {t("ticker.item1")}
-              </span>
-              <span>
-                <strong className="text-purple-400 mr-2">[APRIL 2026 - MILESTONE]</strong>
-                {t("ticker.item3")}
-              </span>
-              <span>
-                <strong className="text-amber-400 mr-2">[MARCH 2026 - PARTNERS]</strong>
-                {t("ticker.item4")}
-              </span>
-              {/* Duplicate for infinite effect */}
-              <span>
-                <strong className="text-blue-400 mr-2">[JUNE 2026 - EVENT]</strong>
-                {t("ticker.item2")}
-              </span>
-              <span>
-                <strong className="text-emerald-400 mr-2">[MAY 2026 - EXPANSION]</strong>
-                {t("ticker.item1")}
-              </span>
-              <span>
-                <strong className="text-purple-400 mr-2">[APRIL 2026 - MILESTONE]</strong>
-                {t("ticker.item3")}
-              </span>
-              <span>
-                <strong className="text-amber-400 mr-2">[MARCH 2026 - PARTNERS]</strong>
-                {t("ticker.item4")}
-              </span>
+              {(() => {
+                const baseItems =
+                  homepageData?.tickerItems && homepageData.tickerItems.length > 0
+                    ? homepageData.tickerItems
+                    : [
+                        { id: "1", label: "EVENT", date: "JUNE 2026", text: t("ticker.item2"), color: "blue" },
+                        { id: "2", label: "EXPANSION", date: "MAY 2026", text: t("ticker.item1"), color: "emerald" },
+                        { id: "3", label: "MILESTONE", date: "APRIL 2026", text: t("ticker.item3"), color: "purple" },
+                        { id: "4", label: "PARTNERS", date: "MARCH 2026", text: t("ticker.item4"), color: "amber" },
+                      ];
+                const repeatedItems =
+                  baseItems.length <= 2
+                    ? [...baseItems, ...baseItems, ...baseItems, ...baseItems]
+                    : [...baseItems, ...baseItems];
+                return repeatedItems.map((item, idx) => {
+                  const colorMap: Record<string, string> = {
+                    blue: "text-blue-400",
+                    emerald: "text-emerald-400",
+                    purple: "text-purple-400",
+                    amber: "text-amber-400",
+                    rose: "text-rose-400",
+                    sky: "text-sky-400",
+                  };
+                  const colorClass = colorMap[item.color] || "text-blue-400";
+                  return (
+                    <span key={`${item.id}-${idx}`}>
+                      <strong className={`${colorClass} mr-2`}>
+                        [{item.date ? `${item.date} - ` : ""}{item.label || "NEWS"}]
+                      </strong>
+                      {item.text}
+                    </span>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
       </section>
+
+      {/* Dynamic Content from Admin Pages -> Home */}
+      {customContent && customContent.trim() !== "<p></p>" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+          <div
+            className="p-8 sm:p-12 bg-white border border-slate-100 rounded-3xl shadow-sm prose prose-slate max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       {/* 3. ABOUT US SECTION */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -313,6 +397,59 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 3b. HOMEPAGE SPOTLIGHT MEDIA (Photos & Videos from Admin) */}
+      {spotlightMedia.length > 0 && (
+        <section className="py-20 bg-slate-900 text-white border-t border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-widest block mb-2">
+                Spotlight Highlights
+              </span>
+              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Featured Media & Moments
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {spotlightMedia.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/60 shadow-lg flex flex-col transition-transform hover:-translate-y-1"
+                >
+                  <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+                    {item.type === "video" ? (
+                      item.url.includes("youtube.com") || item.url.includes("youtu.be") ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${item.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1] || ""}`}
+                          className="w-full h-full"
+                          allow="encrypted-media"
+                        />
+                      ) : (
+                        <video src={item.url} controls className="w-full h-full object-cover" />
+                      )
+                    ) : (
+                      <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="p-5 flex flex-col flex-1 justify-between">
+                    <div>
+                      <h4 className="font-heading font-bold text-white text-base line-clamp-1">
+                        {item.title}
+                      </h4>
+                      {item.caption && (
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          {item.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 4. CONTACT US QUICK SECTION */}
       <section className="py-24 bg-white border-t border-slate-100">
@@ -443,7 +580,7 @@ export default function HomePage() {
                       {["$25", "$50", "$100", "Custom"].map((amount) => (
                         <a
                           key={amount}
-                          href={`mailto:connect@meruglobal.org?subject=Donation%20to%20Meru%20Organisation&body=Hello%20Meru%20Team,%0A%0AI%20would%20like%20to%20donate%20${encodeURIComponent(amount)}%20to%20the%20Meru%20organisation.%20Please%20share%20the%20next%20steps.%0A%0AThank%20you.`}
+                          href={`mailto:${contactEmail}?subject=Donation%20to%20Meru%20Organisation&body=Hello%20Meru%20Team,%0A%0AI%20would%20like%20to%20donate%20${encodeURIComponent(amount)}%20to%20the%20Meru%20organisation.%20Please%20share%20the%20next%20steps.%0A%0AThank%20you.`}
                           className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center font-heading text-lg font-extrabold text-slate-900 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                         >
                           {amount}
@@ -467,7 +604,7 @@ export default function HomePage() {
                     </div>
 
                     <a
-                      href="mailto:connect@meruglobal.org?subject=Donation%20to%20Meru%20Organisation&body=Hello%20Meru%20Team,%0A%0AI%20would%20like%20to%20make%20a%20donation%20to%20the%20Meru%20organisation.%20Please%20share%20the%20donation%20process.%0A%0AThank%20you."
+                      href={`mailto:${contactEmail}?subject=Donation%20to%20Meru%20Organisation&body=Hello%20Meru%20Team,%0A%0AI%20would%20like%20to%20make%20a%20donation%20to%20the%20Meru%20organisation.%20Please%20share%20the%20donation%20process.%0A%0AThank%20you.`}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-colors hover:bg-blue-700"
                     >
                       <HeartHandshake className="h-5 w-5" />

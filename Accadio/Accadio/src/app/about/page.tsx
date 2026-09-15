@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Compass, Sparkles, Award, ShieldCheck, HeartHandshake, Target, ChevronRight, Briefcase, Network } from "lucide-react";
 import { useTranslation } from "@/components/LanguageContext";
@@ -8,6 +9,13 @@ import { useTranslation } from "@/components/LanguageContext";
 export default function AboutPage() {
   const { t } = useTranslation();
   const [selectedDept, setSelectedDept] = useState<string>("executive");
+  const [customContent, setCustomContent] = useState<string | null>(null);
+
+  // Live-polling: refresh page content whenever admin saves changes (every 5 s or on focus)
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/about", 5000);
+  useEffect(() => {
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
 
   // Leadership team data
   const leaders = [
@@ -84,6 +92,16 @@ export default function AboutPage() {
           Reaching the unreached, Connecting generations to the great commission.
         </p>
       </div>
+
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && customContent.trim() !== "<p></p>" && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       {/* 1. Core Profile Details */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-16 mb-24 items-center">

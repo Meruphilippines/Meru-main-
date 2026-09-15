@@ -1,5 +1,3 @@
-import nodemailer from "nodemailer";
-
 export interface SendInquiryNotificationOptions {
   name: string;
   email: string;
@@ -81,24 +79,28 @@ export async function sendInquiryEmails(inquiry: SendInquiryNotificationOptions)
   // 2. Check if SMTP configuration is available
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587", 10),
-        secure: process.env.SMTP_PORT === "465",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+      // @ts-ignore
+      const nodemailer = await import("nodemailer").catch(() => null);
+      if (nodemailer) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || "587", 10),
+          secure: process.env.SMTP_PORT === "465",
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
 
-      await transporter.sendMail({
-        from: fromEmail,
-        to: adminEmail,
-        subject,
-        html: htmlContent,
-      });
+        await transporter.sendMail({
+          from: fromEmail,
+          to: adminEmail,
+          subject,
+          html: htmlContent,
+        });
 
-      return { success: true };
+        return { success: true };
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("SMTP email dispatch error:", message);

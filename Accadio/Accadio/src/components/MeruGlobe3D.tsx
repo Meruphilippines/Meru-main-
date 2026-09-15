@@ -7,11 +7,17 @@ import { TEXTURE_DATA_URL } from "./textureData";
 interface MeruGlobe3DProps {
   size?: number;
   className?: string;
+  autoRotate?: boolean;
 }
 
-export default function MeruGlobe3D({ size = 220, className = "" }: MeruGlobe3DProps) {
+export default function MeruGlobe3D({ size = 220, className = "", autoRotate = true }: MeruGlobe3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const autoRotateRef = useRef(autoRotate);
+
+  useEffect(() => {
+    autoRotateRef.current = autoRotate;
+  }, [autoRotate]);
 
   useEffect(() => {
     if (!mountRef.current || !canvasRef.current) return;
@@ -204,7 +210,7 @@ export default function MeruGlobe3D({ size = 220, className = "" }: MeruGlobe3DP
 
     function animate() {
       animationFrameId = requestAnimationFrame(animate);
-      if (sphere && !isDragging) {
+      if (sphere && !isDragging && autoRotateRef.current) {
         sphere.rotation.y += BASE_SPEED;
       }
       renderer.render(scene, camera);

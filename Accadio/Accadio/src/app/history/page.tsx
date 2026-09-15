@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useLiveData } from "@/hooks/useLiveData";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -41,31 +42,33 @@ export default function HistoryPage() {
   const [activeMilestone, setActiveMilestone] = useState<number | null>(null);
   const [historySlots, setHistorySlots] = useState<HistorySlotItem[]>([]);
   const [activeMedia, setActiveMedia] = useState<{ type: "photo" | "video"; url: string; title: string } | null>(null);
+  const [customContent, setCustomContent] = useState<string | null>(null);
+
+  // Live-polling: refresh history slots and page content every 5 s, on focus, and on broadcast
+  const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/history", 5000);
+  const { data: liveHistory } = useLiveData<HistorySlotItem[]>("/api/history", 5000);
 
   useEffect(() => {
-    fetch("/api/history")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setHistorySlots(data);
-        } else {
-          setHistorySlots(defaultMoments);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching history slots:", err);
-        setHistorySlots(defaultMoments);
-      });
-  }, []);
+    if (livePageContent?.content) setCustomContent(livePageContent.content);
+  }, [livePageContent]);
 
-  const milestones = [
+  useEffect(() => {
+    if (Array.isArray(liveHistory) && liveHistory.length > 0) {
+      setHistorySlots(liveHistory);
+    } else if (liveHistory !== null) {
+      setHistorySlots(defaultMoments);
+    }
+  }, [liveHistory]);
+
+  const defaultMilestones = [
     {
       year: "2010",
       title: "UPG Confrence at ASCM",
       desc: "The Unreached People Groups (UPG) conference at the Asian Seminary of Christian Ministries (ASCM) became the seedbed for MERU. Rev. Dr. Roland Vaughan, coordinator of Church of God World Missions (COGWM) UPG Missions, served as keynote speaker, inspiring partnerships that later shaped MERU.",
       icon: Compass,
       color: "border-blue-500 text-blue-600 bg-blue-50",
-      imageGrad: "from-blue-400 to-indigo-500"
+      imageGrad: "from-blue-400 to-indigo-500",
+      photoPath: null as string | null,
     },
     {
       year: "2010",
@@ -73,7 +76,8 @@ export default function HistoryPage() {
       desc: "The conference fostered collaborations among leaders and missionaries who were instrumental in developing MERU’s vision and strategies..",
       icon: BookOpen,
       color: "border-purple-500 text-purple-600 bg-purple-50",
-      imageGrad: "from-purple-400 to-pink-500"
+      imageGrad: "from-purple-400 to-pink-500",
+      photoPath: null as string | null,
     },
     {
       year: "2011",
@@ -81,7 +85,8 @@ export default function HistoryPage() {
       desc: "Dr. George Pappachen, an ASCM D.Min. graduate, conducted research on Christian Missions for the Unreached (CMU) among the Agta people of Palanan, Isabela, Philippines. His focus on “gospel inculturation” documented best practices and laid the foundation for innovative UPG mission strategies.",
       icon: Globe,
       color: "border-emerald-500 text-emerald-600 bg-emerald-50",
-      imageGrad: "from-emerald-400 to-teal-500"
+      imageGrad: "from-emerald-400 to-teal-500",
+      photoPath: null as string | null,
     },
     {
       year: "2012",
@@ -89,7 +94,8 @@ export default function HistoryPage() {
       desc: "Emerging from the mission's atmosphere of innovation and partnership, MERU Global Team was established as a new addition to organizations serving UPG missions worldwide. It stands as a testimony to the call of Christ to birthing ministries that connect people to the Great Commission..",
       icon: Award,
       color: "border-amber-500 text-amber-600 bg-amber-50",
-      imageGrad: "from-amber-400 to-orange-500"
+      imageGrad: "from-amber-400 to-orange-500",
+      photoPath: null as string | null,
     },
     {
       year: "2020",
@@ -97,10 +103,45 @@ export default function HistoryPage() {
       desc: "Today, MERU has spread to nations across the world, launching training programs, hosting conferences, and building bridges between generations and cultures. Through these initiatives, MERU continues to gather people for the Great Commission, empowering Christians to reach the unreached with the Gospel.",
       icon: HeartHandshake,
       color: "border-rose-500 text-rose-600 bg-rose-50",
-      imageGrad: "from-rose-400 to-red-500"
-    }
+      imageGrad: "from-rose-400 to-red-500",
+      photoPath: null as string | null,
+    },
   ];
 
+  const tagIconMap: Record<string, any> = {
+    Event: Compass,
+    Academic: BookOpen,
+    Expansion: Globe,
+    Corporate: Award,
+    Summit: HeartHandshake,
+    Field: Globe,
+    Milestone: Award,
+    Partnership: HeartHandshake,
+  };
+
+  const dynamicMilestones =
+    historySlots.length > 0
+      ? historySlots.map((slot, idx) => {
+          const colors = [
+            "border-blue-500 text-blue-600 bg-blue-50",
+            "border-purple-500 text-purple-600 bg-purple-50",
+            "border-emerald-500 text-emerald-600 bg-emerald-50",
+            "border-amber-500 text-amber-600 bg-amber-50",
+            "border-rose-500 text-rose-600 bg-rose-50",
+          ];
+          return {
+            year: slot.year,
+            title: slot.title,
+            desc: slot.caption || slot.title,
+            icon: tagIconMap[slot.tag] || Compass,
+            color: colors[idx % colors.length],
+            imageGrad: slot.gradient || "from-blue-400 to-indigo-500",
+            photoPath: slot.photoPath,
+          };
+        })
+      : defaultMilestones;
+
+  const milestones = dynamicMilestones;
   const displayMoments = historySlots.length > 0 ? historySlots : defaultMoments;
 
   const getYoutubeOrVimeoEmbed = (url: string) => {
@@ -138,6 +179,16 @@ export default function HistoryPage() {
           MERU Global team&apos;s history timeline and archival records.
         </p>
       </div>
+
+      {/* Admin Visual Editor Custom Content Banner if customized */}
+      {customContent && (
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div
+            className="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm prose max-w-none text-slate-700 font-medium"
+            dangerouslySetInnerHTML={{ __html: customContent }}
+          />
+        </section>
+      )}
 
       {/* Vertical Interactive Timeline */}
       <section id="timeline" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative mb-24">
@@ -177,9 +228,19 @@ export default function HistoryPage() {
                     </motion.div>
                   ) : (
                     /* Styled visual card representation for alternate side */
-                    <div className="w-full h-44 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100/50 hidden md:flex items-center justify-center p-6 relative overflow-hidden group select-none">
-                      <div className={`absolute inset-0 bg-gradient-to-tr ${milestone.imageGrad} opacity-5 group-hover:opacity-10 transition-opacity duration-300`} />
-                      <IconComp className="h-10 w-10 text-slate-300 group-hover:text-blue-500 transition-colors duration-300" />
+                    <div className="w-full h-44 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100/50 hidden md:flex items-center justify-center relative overflow-hidden group select-none">
+                      {milestone.photoPath ? (
+                        <img
+                          src={milestone.photoPath}
+                          alt={milestone.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <>
+                          <div className={`absolute inset-0 bg-gradient-to-tr ${milestone.imageGrad} opacity-5 group-hover:opacity-10 transition-opacity duration-300`} />
+                          <IconComp className="h-10 w-10 text-slate-300 group-hover:text-blue-500 transition-colors duration-300" />
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -204,9 +265,19 @@ export default function HistoryPage() {
                     </motion.div>
                   ) : (
                     /* Styled visual card representation for alternate side */
-                    <div className="w-full h-44 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100/50 hidden md:flex items-center justify-center p-6 relative overflow-hidden group select-none">
-                      <div className={`absolute inset-0 bg-gradient-to-tr ${milestone.imageGrad} opacity-5 group-hover:opacity-10 transition-opacity duration-300`} />
-                      <IconComp className="h-10 w-10 text-slate-300 group-hover:text-purple-500 transition-colors duration-300" />
+                    <div className="w-full h-44 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100/50 hidden md:flex items-center justify-center relative overflow-hidden group select-none">
+                      {milestone.photoPath ? (
+                        <img
+                          src={milestone.photoPath}
+                          alt={milestone.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <>
+                          <div className={`absolute inset-0 bg-gradient-to-tr ${milestone.imageGrad} opacity-5 group-hover:opacity-10 transition-opacity duration-300`} />
+                          <IconComp className="h-10 w-10 text-slate-300 group-hover:text-purple-500 transition-colors duration-300" />
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

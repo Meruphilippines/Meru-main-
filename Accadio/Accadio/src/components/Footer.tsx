@@ -12,6 +12,24 @@ export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [contactInfo, setContactInfo] = useState<{
+    phone: string;
+    email: string;
+    address: string;
+    socialLinks: Record<string, string>;
+  } | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/contact")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && (data.phone || data.email || data.address)) {
+          setContactInfo(data);
+        }
+      })
+      .catch((err) => console.error("Error loading contact info in footer:", err));
+  }, []);
+
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -47,15 +65,15 @@ export default function Footer() {
             <div className="space-y-2.5 text-sm">
               <div className="flex items-start gap-3">
                 <MapPin className="h-4.5 w-4.5 text-blue-600 mt-0.5" />
-                <span>120 St James&apos;s Square, London, SW1Y 4JH, UK</span>
+                <span>{contactInfo?.address || "120 St James's Square, London, SW1Y 4JH, UK"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4.5 w-4.5 text-blue-600" />
-                <span>+44 20 7946 0192</span>
+                <span>{contactInfo?.phone || "+44 20 7946 0192"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4.5 w-4.5 text-blue-600" />
-                <span>connect@meruglobal.org</span>
+                <span>{contactInfo?.email || "connect@meruglobal.org"}</span>
               </div>
             </div>
           </div>

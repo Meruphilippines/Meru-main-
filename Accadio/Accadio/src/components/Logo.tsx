@@ -11,6 +11,8 @@ interface LogoProps {
   animateGlobe?: boolean;
   variant?: "horizontal" | "vertical" | "icon";
   hero3d?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
 /** Official MERU logo aspect ratio (width / height) from brand asset */
@@ -23,6 +25,8 @@ export default function Logo({
   animateGlobe = true,
   variant = "vertical",
   hero3d = false,
+  title,
+  subtitle,
 }: LogoProps) {
   const logoHeight =
     variant === "horizontal"
@@ -44,7 +48,7 @@ export default function Logo({
 
     return (
       <div className={`flex flex-col items-center text-center select-none font-serif ${className}`}>
-        <MeruGlobe3D size={globeSize} />
+        <MeruGlobe3D size={globeSize} autoRotate={animateGlobe} />
         <h1
           className="m-0 mt-5 mb-2 font-bold leading-none text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-400 to-indigo-400"
           style={{
@@ -52,7 +56,7 @@ export default function Logo({
             letterSpacing: "0.18em",
           }}
         >
-          MERU
+          {title || "MERU"}
         </h1>
         <p
           className="m-0 font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300"
@@ -61,7 +65,7 @@ export default function Logo({
             letterSpacing: "0.04em",
           }}
         >
-          Reaching The Unreached
+          {subtitle || "Reaching The Unreached"}
         </p>
       </div>
     );
