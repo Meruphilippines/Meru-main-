@@ -6,48 +6,49 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Users, Compass, Sparkles, Award, ShieldCheck, HeartHandshake, Target, ChevronRight, Briefcase, Network } from "lucide-react";
 import { useTranslation } from "@/components/LanguageContext";
 
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  bio?: string | null;
+  initial?: string | null;
+  photoPath?: string | null;
+  gradient: string;
+}
+
+const defaultLeaders: TeamMember[] = [
+  {
+    id: "d1",
+    name: "Dr. Abel Mathew",
+    role: "Founder & Chief Executive Officer",
+    bio: "Visionary leader dedicated to reaching unreached people groups worldwide through training programs, conferences, and strategic partnerships.",
+    initial: "A",
+    gradient: "from-blue-600 to-indigo-700",
+    photoPath: null,
+  },
+];
+
 export default function AboutPage() {
   const { t } = useTranslation();
   const [selectedDept, setSelectedDept] = useState<string>("executive");
   const [customContent, setCustomContent] = useState<string | null>(null);
+  const [leaders, setLeaders] = useState<TeamMember[]>(defaultLeaders);
 
   // Live-polling: refresh page content whenever admin saves changes (every 5 s or on focus)
   const { data: livePageContent } = useLiveData<{ content?: string }>("/api/pages/about", 5000);
+  const { data: liveTeam } = useLiveData<TeamMember[]>("/api/team", 10000);
+
   useEffect(() => {
     if (livePageContent?.content) setCustomContent(livePageContent.content);
   }, [livePageContent]);
 
-  // Leadership team data
-  const leaders = [
-    {
-      name: "Dr. Alistair Meru",
-      role: "Founder & Chief Executive Officer",
-      bio: "Former UN education consultant and capability development specialist. Dr. Alistair founded Meru Global Team to bridge resource gaps in emerging economies.",
-      initial: "A",
-      gradient: "from-blue-600 to-indigo-700",
-    },
-    {
-      name: "Maria C. Santos",
-      role: "Director of Global Operations",
-      bio: "Spearheads operational logistics across 45+ countries. Over 15 years of experience setting up academic exchange networks in Latin America and the EU.",
-      initial: "M",
-      gradient: "from-pink-500 to-purple-600",
-    },
-    {
-      name: "Kenji Tanaka",
-      role: "Director of Academic Relations",
-      bio: "Liaises with partner institutions and academic boards globally. Oversees certification approvals and curriculum alignments with international standards.",
-      initial: "K",
-      gradient: "from-emerald-500 to-teal-600",
-    },
-    {
-      name: "Amb. Sarah Jenkins",
-      role: "Global Youth Ambassador Lead",
-      bio: "Advocates for civic youth empowerment at international forums. Leads recruitment for the annual Civic Leadership Summit and regional workshops.",
-      initial: "S",
-      gradient: "from-amber-500 to-orange-600",
-    },
-  ];
+  useEffect(() => {
+    if (Array.isArray(liveTeam) && liveTeam.length > 0) {
+      setLeaders(liveTeam);
+    }
+  }, [liveTeam]);
+
+
 
   // Org chart departments data
   const departments = {

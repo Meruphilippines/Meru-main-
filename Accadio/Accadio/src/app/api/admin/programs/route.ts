@@ -17,6 +17,29 @@ export async function GET() {
       orderBy: { order: "asc" },
     });
 
+    if (programs.length === 0) {
+      try {
+        const seed = await prisma.program.create({
+          data: {
+            title: "Sample Program",
+            slug: "sample-program",
+            category: "exchange",
+            tag: "Exchange",
+            desc: "Sample program description.",
+            eligibility: "Open to all",
+            benefits: JSON.stringify(["Experience", "Credits"]),
+            gradient: "from-blue-400 to-indigo-500",
+            iconName: "Compass",
+            isPublished: true,
+            order: 0,
+          },
+        });
+        programs.push(seed);
+      } catch (err) {
+        console.error("Prisma seed program error:", err);
+      }
+    }
+
     // Provide both name and title, description and desc for full compatibility
     const formatted = programs.map((p) => ({
       id: p.id,

@@ -43,6 +43,41 @@ export async function GET() {
           }))
         );
       }
+
+      // If DB is empty, seed default pages into the database so UI works off the DB
+      const defaultPages: any[] = [
+        { slug: "home", title: "Home", content: DEFAULT_PAGE_CONTENTS.home, status: "published" },
+        { slug: "about", title: "About Us", content: DEFAULT_PAGE_CONTENTS.about, status: "published" },
+        { slug: "history", title: "History", content: DEFAULT_PAGE_CONTENTS.history, status: "published" },
+        { slug: "programs", title: "Programs", content: DEFAULT_PAGE_CONTENTS.programs, status: "published" },
+        { slug: "testimonials", title: "Testimonials", content: DEFAULT_PAGE_CONTENTS.testimonials, status: "published" },
+        { slug: "news", title: "News & Events", content: DEFAULT_PAGE_CONTENTS.news, status: "published" },
+        { slug: "contact", title: "Contact", content: DEFAULT_PAGE_CONTENTS.contact, status: "published" },
+      ];
+
+      for (const p of defaultPages) {
+        try {
+          await prisma.pageContent.upsert({
+            where: { slug: p.slug },
+            update: { title: p.title, content: p.content, status: p.status },
+            create: { slug: p.slug, title: p.title, content: p.content, status: p.status },
+          });
+        } catch (err) {
+          console.error("Prisma seed page error for", p.slug, err);
+        }
+      }
+
+      const seeded = await prisma.pageContent.findMany({ orderBy: { lastUpdated: "desc" } });
+      return Response.json(
+        seeded.map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          content: p.content,
+          status: p.status as "draft" | "published",
+          lastUpdated: p.lastUpdated.toISOString(),
+        }))
+      );
     } catch (dbErr) {
       console.error("Prisma pages GET error:", dbErr);
     }

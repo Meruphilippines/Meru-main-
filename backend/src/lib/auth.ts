@@ -35,11 +35,25 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 
 // ── Admin User ──
 export async function getAdmin(): Promise<AdminUser> {
-  const admin = await prisma.adminUser.findFirst();
-  if (!admin) {
-    throw new Error("No admin user found");
+  try {
+    let admin = await prisma.adminUser.findFirst();
+    if (admin) return admin;
+
+    // If no admin exists, create a seeded admin user so admin routes work
+    const passwordHash = await bcrypt.hash("meruadmin2026!", SALT_ROUNDS);
+    admin = await prisma.adminUser.create({
+      data: {
+        username: "admin",
+        passwordHash,
+        mustChangePassword: false,
+      },
+    });
+    return admin;
+  } catch (err) {
+    console.error("Prisma getAdmin error:", err);
+    // Re-throw so callers can decide how to handle DB connectivity issues
+    throw err;
   }
-  return admin;
 }
 
 export async function updateAdmin(updates: Partial<AdminUser>): Promise<AdminUser> {

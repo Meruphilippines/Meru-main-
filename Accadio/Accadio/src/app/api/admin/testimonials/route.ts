@@ -17,6 +17,28 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
+    if (testimonials.length === 0) {
+      try {
+        const seed = await prisma.testimonial.create({
+          data: {
+            type: "written",
+            title: "Welcome Testimonial",
+            speaker: "MERU",
+            details: "",
+            quote: "This is a sample testimonial.",
+            author: "MERU Team",
+            role: "Organization",
+            rating: 5,
+            gradient: "from-blue-400 to-indigo-500",
+            isPublished: true,
+          },
+        });
+        testimonials.push(seed);
+      } catch (err) {
+        console.error("Prisma seed testimonial error:", err);
+      }
+    }
+
     const formatted = testimonials.map((t) => ({
       id: t.id,
       name: t.author || t.speaker || t.title || "Anonymous",

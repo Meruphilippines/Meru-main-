@@ -22,10 +22,25 @@ export async function GET() {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const contact = await prisma.contactInfo.findFirst();
+    let contact = await prisma.contactInfo.findFirst();
 
     if (!contact) {
-      return Response.json(defaultContact);
+      // Create a DB record with defaults so admin UI operates against the database
+      try {
+        contact = await prisma.contactInfo.create({
+          data: {
+            phone: defaultContact.phone,
+            email: defaultContact.email,
+            address: defaultContact.address,
+            socialLinks: JSON.stringify(defaultContact.socialLinks),
+            googleMapsEmbed: defaultContact.googleMapsEmbed || "",
+            lastUpdated: new Date(),
+          },
+        });
+      } catch (err) {
+        console.error("Prisma contact create error:", err);
+        return Response.json(defaultContact);
+      }
     }
 
     return Response.json({

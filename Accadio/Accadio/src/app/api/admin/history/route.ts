@@ -17,6 +17,26 @@ export async function GET() {
       orderBy: [{ order: "asc" }, { year: "desc" }],
     });
 
+    if (slots.length === 0) {
+      try {
+        const seed = await prisma.historySlot.create({
+          data: {
+            title: "Founding Event",
+            year: new Date().getFullYear().toString(),
+            tag: "Event",
+            caption: "Inaugural event",
+            photoPath: "",
+            videoUrl: "",
+            gradient: "from-blue-400 to-indigo-500",
+            order: 0,
+          },
+        });
+        return Response.json([seed]);
+      } catch (err) {
+        console.error("Prisma seed history error:", err);
+      }
+    }
+
     return Response.json(slots);
   } catch (error) {
     console.error("Admin History GET error:", error);

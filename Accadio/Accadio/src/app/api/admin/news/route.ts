@@ -17,6 +17,41 @@ export async function GET() {
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
+    if (articles.length === 0) {
+      // Seed a default article when DB is empty so Admin UI has real data
+      try {
+        const seed = await prisma.newsArticle.create({
+          data: {
+            title: "Welcome to MERU News",
+            category: "General",
+            date: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+            desc: "This is the first news article.",
+            content: "",
+            gradient: "from-blue-400 to-indigo-500",
+            isPublished: true,
+            order: 1,
+          },
+        });
+        return Response.json([
+          {
+            id: seed.id,
+            title: seed.title,
+            category: seed.category,
+            date: seed.date,
+            desc: seed.desc,
+            content: seed.content || "",
+            gradient: seed.gradient,
+            imagePath: seed.imagePath || "",
+            isPublished: seed.isPublished,
+            order: seed.order,
+            createdAt: seed.createdAt.toISOString(),
+          },
+        ]);
+      } catch (err) {
+        console.error("Prisma seed news error:", err);
+      }
+    }
+
     return Response.json(
       articles.map((a) => ({
         id: a.id,

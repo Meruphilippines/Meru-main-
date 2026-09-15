@@ -43,7 +43,25 @@ export async function GET() {
     const fileData = readData<HomepageData>("homepage.json", defaultHomepage);
 
     try {
-      const dbSetting = await prisma.homepageSetting.findFirst();
+      let dbSetting = await prisma.homepageSetting.findFirst();
+      if (!dbSetting) {
+        // Seed a homepageSetting record if missing so admin uses DB consistently
+        try {
+          await prisma.homepageSetting.create({
+            data: {
+              id: "default",
+              heroTitle: fileData.heroTitle || defaultHomepage.heroTitle,
+              heroSubtitle: fileData.heroSubtitle || defaultHomepage.heroSubtitle,
+              tickerItems: JSON.stringify(fileData.tickerItems || []),
+              lastUpdated: new Date(),
+            },
+          });
+        } catch (err) {
+          console.error("Prisma homepage seed error:", err);
+        }
+        dbSetting = await prisma.homepageSetting.findFirst();
+      }
+
       if (dbSetting) {
         let parsedTickers: any[] = [];
         try {
